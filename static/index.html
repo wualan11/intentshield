@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智链盾 IntentShield · 智能体运行时安全管控平台</title>
+<style>
+:root{
+  --bg:#0B1B33; --panel:#12294A; --panel2:#16305A; --panel3:#1B3866;
+  --line:#20406F; --txt:#E8F0FA; --dim:#8FA6C4; --dimmer:#5A7396;
+  --cyan:#27B0D6; --amber:#E8A33D; --red:#E5503C; --green:#3FB96B; --purple:#8B7FD6;
+  --num:"Consolas","SF Mono",monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--txt);font-family:"Source Han Sans SC","Noto Sans SC","Microsoft YaHei","PingFang SC",sans-serif;font-size:13px;overflow:hidden}
+b{font-weight:600}.num{font-family:var(--num);font-variant-numeric:tabular-nums}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#26456f;border-radius:4px}::-webkit-scrollbar-track{background:transparent}
+/* 登录 */
+#login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 30%,#122a4e,#081426)}
+.login-box{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:36px;width:380px;box-shadow:0 8px 30px rgba(0,0,0,.45)}
+.login-box .logo{display:flex;align-items:center;gap:12px}
+.login-box .lg{width:42px;height:42px;border-radius:8px;background:var(--cyan);display:flex;align-items:center;justify-content:center;font-weight:800;color:#06202e;font-size:18px}
+.login-box h1{font-size:17px}.login-box .en{color:var(--dimmer);font-size:11px;margin:3px 0 22px;font-family:var(--num)}
+.field{margin-bottom:14px}.field label{display:block;color:var(--dim);font-size:12px;margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;background:#0a1a33;border:1px solid var(--line);border-radius:6px;color:var(--txt);padding:10px 12px;font-size:13px;font-family:inherit}
+.field input:focus{outline:none;border-color:var(--cyan)}
+.btn{background:var(--cyan);border:none;color:#06202e;padding:10px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit;font-weight:600;transition:.15s}
+.btn:hover{filter:brightness(1.1)}.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--txt);font-weight:400}
+.btn.ghost:hover{background:var(--panel2)}
+.btn.red{background:var(--red);color:#fff}.btn.green{background:var(--green);color:#04180c}.btn.amber{background:var(--amber);color:#241703}
+.btn.sm{padding:6px 11px;font-size:12px}
+.demo-tip{margin-top:16px;padding:10px;background:#0a1a33;border-radius:6px;color:var(--dim);font-size:11px;line-height:1.7;border:1px dashed var(--line)}
+.err{color:var(--red);font-size:12px;margin-top:8px;min-height:16px}
+/* 外壳 */
+#app{display:none;height:100vh}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:210px;background:#0d2140;border-right:1px solid var(--line);display:flex;flex-direction:column;z-index:20}
+.sidebar .brand{padding:16px;border-bottom:1px solid var(--line)}
+.sidebar .brand .n{display:flex;align-items:center;gap:9px}
+.sidebar .brand .lg{width:32px;height:32px;border-radius:8px;background:var(--cyan);display:flex;align-items:center;justify-content:center;font-weight:800;color:#06202e;font-size:14px}
+.sidebar .brand b{font-size:15px}.sidebar .brand .e{color:var(--dimmer);font-size:9px;margin-top:2px;font-family:var(--num);letter-spacing:.5px}
+.nav{flex:1;overflow-y:auto;padding:8px}
+.nav a{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:6px;color:var(--dim);cursor:pointer;text-decoration:none;margin-bottom:2px;font-size:13px}
+.nav a .ic{width:18px;text-align:center;font-size:14px}
+.nav a:hover{background:var(--panel2);color:var(--txt)}
+.nav a.on{background:var(--cyan);color:#06202e;font-weight:600}
+.nav .grp{color:var(--dimmer);font-size:10px;padding:12px 12px 4px;letter-spacing:1px}
+.sidebar .foot{padding:12px 16px;border-top:1px solid var(--line);font-size:10px;color:var(--dimmer);line-height:1.7}
+.main{margin-left:210px;height:100vh;display:flex;flex-direction:column}
+.topbar{height:52px;background:#0d2140;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 20px;gap:18px;flex-shrink:0}
+.topbar .stat{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--dim)}
+.topbar .stat .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(63,185,107,.6)}
+.topbar .stat b{color:var(--txt);font-family:var(--num)}
+.topbar .spacer{flex:1}
+.crumb{font-size:12px;color:var(--dimmer)}.crumb b{color:var(--txt);font-weight:500}
+.crumb .sep{margin:0 6px;color:var(--dimmer)}
+.topbar .clock{color:var(--dim);font-size:12px;font-family:var(--num)}
+.topbar .user{display:flex;align-items:center;gap:8px;cursor:pointer}
+.topbar .avatar{width:28px;height:28px;border-radius:6px;background:var(--panel3);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--cyan)}
+.content{flex:1;overflow-y:auto;padding:18px 20px}
+.page{display:none}.page.on{display:block}
+.page-title{font-size:17px;margin-bottom:3px}.page-sub{color:var(--dim);font-size:12px;margin-bottom:16px}
+/* 卡片 */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:15px;margin-bottom:14px;box-shadow:0 2px 8px rgba(2,10,25,.35)}
+.card h3{font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-weight:600}
+.card h3::before{content:"";width:3px;height:13px;border-radius:2px;background:var(--cyan)}
+.card h3 .sp{flex:1}
+.grid{display:grid;gap:13px}
+.g4{grid-template-columns:repeat(4,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:repeat(2,1fr)}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:15px 17px;box-shadow:0 2px 8px rgba(2,10,25,.35);position:relative}
+.kpi .l{color:var(--dim);font-size:12px}
+.kpi .v{font-size:26px;font-weight:700;margin:6px 0 3px;font-family:var(--num);font-variant-numeric:tabular-nums}
+.kpi .t{font-size:10px;color:var(--dimmer);font-family:var(--num);letter-spacing:.3px}
+/* 徽章 */
+.tag{display:inline-block;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:500;line-height:1.5;border:1px solid transparent}
+.t-low{background:rgba(63,185,107,.12);color:#7ad29b;border-color:rgba(63,185,107,.3)}
+.t-medium{background:rgba(232,163,61,.12);color:#efc27a;border-color:rgba(232,163,61,.3)}
+.t-high{background:rgba(229,80,60,.13);color:#f2937f;border-color:rgba(229,80,60,.35)}
+.t-critical{background:rgba(229,80,60,.2);color:#ff9c8a;border-color:var(--red)}
+.t-info{background:rgba(39,176,214,.12);color:#6fc8e4;border-color:rgba(39,176,214,.3)}
+.t-normal{background:rgba(63,185,107,.12);color:#7ad29b;border-color:rgba(63,185,107,.3)}
+.t-drift{background:rgba(139,127,214,.14);color:#b3aaf0;border-color:rgba(139,127,214,.35)}
+.pill{display:inline-block;padding:1px 8px;border-radius:4px;font-size:10px;background:#0a1a33;color:var(--dim);border:1px solid var(--line);font-family:var(--num)}
+/* 表格 */
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{color:var(--dim);font-weight:500;font-size:11px;white-space:nowrap;position:sticky;top:0;background:var(--panel)}
+tr:hover td{background:var(--panel2)}
+td .link{color:var(--cyan);cursor:pointer}td .link:hover{text-decoration:underline}
+td .num{font-family:var(--num)}
+/* 监控三栏 */
+.riskmeter{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:13px 18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(2,10,25,.35)}
+.rm-track{display:flex;height:26px;border-radius:5px;overflow:hidden;position:relative;margin-top:8px}
+.rm-seg{flex:1;display:flex;align-items:center;justify-content:center;font-size:11px;color:#06202e;font-weight:600;opacity:.35;transition:.3s}
+.rm-seg.on{opacity:1}
+.rm-ptr{position:absolute;top:-9px;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:9px solid var(--txt);transition:left .5s;transform:translateX(-7px)}
+.monitor{display:grid;grid-template-columns:1.05fr 1.25fr 0.95fr;gap:13px;height:calc(100vh - 305px);min-height:380px}
+.mcol{background:var(--panel);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 2px 8px rgba(2,10,25,.35)}
+.mcol .mh{padding:11px 14px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.mcol .mb{flex:1;overflow-y:auto;padding:11px}
+/* 任务树 */
+.tree-node{padding:7px 10px;border-radius:5px;font-size:12px;line-height:1.5;cursor:default}
+.tree-node .tn1{display:flex;align-items:center;gap:7px}
+.tree-node .arrow{color:var(--dimmer);font-size:10px}
+.tree-child{margin-left:22px;border-left:1px solid var(--line);padding-left:10px}
+.tree-leaf{padding:5px 9px;font-size:11.5px;color:var(--dim);display:flex;gap:7px;align-items:center}
+.tree-leaf .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+/* 时间线 */
+.tl-node{display:flex;gap:10px;position:relative;padding-bottom:14px}
+.tl-node::before{content:"";position:absolute;left:8px;top:20px;bottom:0;width:2px;background:var(--line)}
+.tl-node:last-child::before{display:none}
+.tl-dot{width:18px;height:18px;border-radius:50%;flex-shrink:0;z-index:1;border:3px solid var(--panel);margin-top:1px}
+.tl-card{flex:1;border:1px solid var(--line);border-radius:6px;padding:9px 11px;background:var(--panel2);cursor:pointer}
+.tl-card.hot{border-color:var(--red);background:rgba(229,80,60,.07)}
+.tl-card.warn{border-color:var(--amber);background:rgba(232,163,61,.06)}
+.tl-card.ok{border-color:rgba(63,185,107,.4)}
+/* 四维判定卡 */
+.verdict{border:1px solid var(--red);border-radius:8px;background:rgba(229,80,60,.08);padding:12px;margin:2px 0 12px 28px;box-shadow:0 4px 14px rgba(2,10,25,.5)}
+.verdict .vh{font-size:12px;font-weight:700;color:#ff9c8a;margin-bottom:9px;display:flex;justify-content:space-between}
+.vgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.vcell{background:rgba(11,27,51,.6);border:1px solid var(--line);border-radius:5px;padding:7px 9px}
+.vcell .vl{font-size:10px;color:var(--dim);margin-bottom:3px}
+.vcell .vr{font-size:11.5px;font-weight:600}
+.v-fail{color:#f2937f}.v-warn{color:#efc27a}.v-pass{color:#7ad29b}
+.vsum{margin-top:9px;padding:8px 10px;background:rgba(232,163,61,.1);border:1px solid var(--amber);border-radius:5px;font-size:12px;color:#efc27a}
+/* 右栏详情 */
+.kv{display:grid;grid-template-columns:92px 1fr;gap:7px 12px;font-size:12px;line-height:1.6}
+.kv .k{color:var(--dim)}
+.gw-tool{border:1px solid var(--line);border-radius:6px;padding:12px;margin-bottom:10px;background:var(--panel2)}
+.gw-tool.block{border-color:var(--red);background:rgba(229,80,60,.08)}
+.gw-tool.warn{border-color:var(--amber);background:rgba(232,163,61,.06)}
+.gw-btn{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+.empty{text-align:center;color:var(--dimmer);padding:36px 20px;font-size:12px}
+.empty .big{font-size:28px;margin-bottom:8px;opacity:.45}
+.banner{border-radius:6px;padding:10px 14px;margin-bottom:13px;font-size:12px;line-height:1.6;border:1px solid}
+.banner.warn{background:rgba(232,163,61,.07);border-color:rgba(232,163,61,.4);color:#efc27a}
+.banner.red{background:rgba(229,80,60,.07);border-color:rgba(229,80,60,.45);color:#f2937f}
+.banner.blue{background:rgba(39,176,214,.07);border-color:rgba(39,176,214,.4);color:#6fc8e4}
+.banner.green{background:rgba(63,185,107,.07);border-color:rgba(63,185,107,.4);color:#7ad29b}
+.chip{padding:2px 8px;border-radius:4px;font-size:10px;background:#0a1a33;border:1px solid var(--line);color:var(--dim);font-family:var(--num)}
+.slider{width:100%}
+.toast{position:fixed;top:64px;right:22px;background:var(--panel3);border:1px solid var(--cyan);border-radius:8px;padding:12px 16px;font-size:13px;z-index:100;box-shadow:0 8px 30px rgba(0,0,0,.5);transform:translateX(120%);transition:.3s}
+.toast.show{transform:translateX(0)}.toast.red{border-color:var(--red)}
+/* 抽屉 */
+.drawer{position:fixed;top:0;right:-420px;bottom:0;width:400px;background:#0d2140;border-left:1px solid var(--line);z-index:50;transition:right .3s;box-shadow:-8px 0 30px rgba(0,0,0,.5);display:flex;flex-direction:column}
+.drawer.open{right:0}
+.drawer .dh{padding:15px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.drawer .db{flex:1;overflow-y:auto;padding:16px 18px}
+.drawer .dx{cursor:pointer;color:var(--dim);font-size:16px}
+/* 对比视图 */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:9px}
+.cmp-col{border:1px solid var(--line);border-radius:6px;padding:10px;background:#0a1a33}
+.cmp-col .ch{font-size:11px;color:var(--dim);margin-bottom:7px;font-weight:600}
+.cmp-col .cb{font-size:11.5px;line-height:1.7}
+.cmp-col.right{border-color:rgba(39,176,214,.4)}
+.cmp-col.left{border-color:rgba(139,127,214,.4)}
+.evi{padding:5px 0;border-bottom:1px dashed var(--line);font-size:11.5px}
+.evi:last-child{border-bottom:none}
+.evi b{color:var(--cyan);font-weight:500}
+/* 占位框 */
+.ph{display:inline-block;min-width:52px;height:16px;border:1px dashed var(--dimmer);border-radius:3px;background:rgba(90,115,150,.08);vertical-align:middle}
+/* 横向回放时间轴 */
+.htl{display:flex;align-items:flex-start;overflow-x:auto;padding:18px 6px 8px;gap:0}
+.hnode{flex:1;min-width:118px;position:relative;text-align:center;padding-top:16px}
+.hnode::before{content:"";position:absolute;top:7px;left:0;right:0;height:2px;background:var(--line)}
+.hnode:first-child::before{left:50%}.hnode:last-child::before{right:50%}
+.hnode .hd{position:absolute;top:0;left:50%;transform:translateX(-50%);width:15px;height:15px;border-radius:50%;border:3px solid var(--bg);z-index:1}
+.hnode .hl{font-size:10px;color:var(--dimmer);font-family:var(--num);margin-top:2px}
+.hnode .ht{font-size:11px;margin-top:3px;line-height:1.4;color:var(--dim)}
+.hnode .hb{font-size:10.5px;margin-top:4px;font-weight:600}
+.bar-chart{display:flex;align-items:flex-end;gap:14px;height:150px;padding:8px 4px 0}
+.bar-chart .bc{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end}
+.bar-chart .bc .b{width:64%;border-radius:4px 4px 0 0;transition:height .6s;min-height:2px}
+.bar-chart .bc .bl{font-size:10px;color:var(--dim);text-align:center;line-height:1.3}
+.bar-chart .bc .bv{font-size:11px;font-weight:700;font-family:var(--num)}
+.legend{display:flex;gap:13px;flex-wrap:wrap;font-size:11px;color:var(--dim);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.switch{position:relative;display:inline-block;width:34px;height:18px;vertical-align:middle}
+.switch input{opacity:0;width:0;height:0}
+.sw{position:absolute;cursor:pointer;inset:0;background:#0a1a33;border:1px solid var(--line);border-radius:10px;transition:.2s}
+.sw::before{content:"";position:absolute;height:12px;width:12px;left:2px;top:2px;background:var(--dimmer);border-radius:50%;transition:.2s}
+.switch input:checked+.sw{background:rgba(39,176,214,.25);border-color:var(--cyan)}
+.switch input:checked+.sw::before{transform:translateX(15px);background:var(--cyan)}
+a{color:var(--cyan)}
+.flow-node{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:8px 11px;font-size:12px;text-align:center}
+.flow-node.hot{border-color:var(--red);color:#f2937f}
+.flow-node.drift{border-color:var(--purple);color:#b3aaf0}
+.flow-arrow{text-align:center;color:var(--dimmer);font-size:13px;margin:2px 0}
+@keyframes fi{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@keyframes tlIn{from{opacity:0;transform:translateY(10px);filter:blur(2px)}to{opacity:1;transform:none;filter:none}}
+@keyframes livePulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(229,80,60,.5)}50%{opacity:.55;box-shadow:0 0 0 5px rgba(229,80,60,0)}}
+@keyframes dotJump{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-4px);opacity:1}}
+.livedots i{display:inline-block;font-style:normal;animation:dotJump 1.2s infinite}
+.livedots i:nth-child(2){animation-delay:.15s}
+.livedots i:nth-child(3){animation-delay:.3s}
+</style>
+</head>
+<body>
+
+<!-- 登录 -->
+<div id="login">
+  <div class="login-box">
+    <div class="logo"><div class="lg">盾</div><div><h1>智链盾 IntentShield</h1></div></div>
+    <div class="en">Agent Runtime Security Control Platform</div>
+    <div class="field"><label>用户名</label><input id="lgUser" value="analyst"></div>
+    <div class="field"><label>密码</label><input id="lgPass" type="password" value="analyst123"></div>
+    <button class="btn" style="width:100%" onclick="doLogin()">登 录</button>
+    <div class="err" id="lgErr"></div>
+    <div class="demo-tip">演示账号：<br>安全分析员 <b>analyst / analyst123</b>（监控·处置·实验）<br>系统管理员 <b>admin / admin123</b>（策略·权限·设置）</div>
+  </div>
+</div>
+
+<!-- 主应用 -->
+<div id="app">
+  <div class="sidebar">
+    <div class="brand">
+      <div class="n"><div class="lg">盾</div><div><b>智链盾</b><div class="e">INTENTSHIELD</div></div></div>
+    </div>
+    <div class="nav" id="nav">
+      <div class="grp">运行安全中心</div>
+      <a data-page="dashboard" class="on"><span class="ic">▤</span>总览 Dashboard</a>
+      <a data-page="monitor"><span class="ic">◉</span>实时监控</a>
+      <a data-page="events"><span class="ic">⚠</span>风险事件中心</a>
+      <div class="grp">实验与研究</div>
+      <a data-page="lab"><span class="ic">⚗</span>Agent 实验室</a>
+      <a data-page="replay"><span class="ic">▶</span>案例回放</a>
+      <a data-page="dataset"><span class="ic">▦</span>意图风险数据集</a>
+      <a data-page="eval"><span class="ic">📊</span>模型评估</a>
+      <div class="grp">策略与治理</div>
+      <a data-page="policy"><span class="ic">🛡</span>策略管理</a>
+      <a data-page="tools"><span class="ic">🔧</span>工具权限</a>
+      <a data-page="audit"><span class="ic">📋</span>审计日志</a>
+      <a data-page="settings" data-admin="1"><span class="ic">⛭</span>系统设置</a>
+    </div>
+    <div class="foot">IntentShield v2.0<br>四道防线：看见 · 看懂 · 核准 · 拦住<br>思维链仅作证据之一，不作真相</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="stat"><span class="dot" id="gwDot"></span>网关心跳 <b id="gwBeat">—</b></div>
+      <div class="stat">策略版本 <b id="tbPolicy" style="color:var(--cyan)">-</b></div>
+      <div class="stat">运行中 Agent <b id="tbAgents">-</b></div>
+      <div class="stat">高风险事件 <b id="tbHigh" style="color:var(--red)">-</b></div>
+      <div class="spacer"></div>
+      <div class="crumb" id="crumb">智链盾</div>
+      <div class="clock" id="clock"></div>
+      <div class="user" onclick="logout()"><div class="avatar" id="av">-</div><div><div style="font-size:12px" id="uName">-</div><div class="pill" id="uRole">-</div></div></div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="drawer" id="drawer"><div class="dh"><b id="drawerTitle">事件归因</b><span class="dx" onclick="closeDrawer()">✕</span></div><div class="db" id="drawerBody"></div></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=t=>(""+(t??"")).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&lt;").replace(/>/g,"&gt;");
+let TOKEN=localStorage.getItem("is_token")||null, ME=null;
+const LVLCOLOR={"低风险":"#3FB96B","中风险":"#E8A33D","高风险":"#E5503C","严重":"#E5503C"};
+const LVLCLS={"低风险":"t-low","中风险":"t-medium","高风险":"t-high","严重":"t-critical"};
+const DECN={allow:"放行",monitor:"加强核验",confirm:"人工确认",block:"阻断",reject:"阻断",limit:"限权"};
+const DECCLS={allow:"t-normal",monitor:"t-medium",confirm:"t-info",block:"t-critical",reject:"t-critical"};
+
+async function api(path, opts={}){
+  const r=await fetch(path,{...opts,headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN,...(opts.headers||{})}});
+  if(r.status===401){logout();throw new Error("未登录");}
+  return r.json();
+}
+function toast(msg,red){const t=$("#toast");t.textContent=msg;t.className="toast show"+(red?" red":"");setTimeout(()=>t.className="toast"+(red?" red":""),3200);}
+function clock(){$("#clock").textContent=new Date().toLocaleString("zh-CN",{hour12:false});}
+setInterval(clock,1000);clock();
+
+async function doLogin(){
+  try{
+    const r=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({username:$("#lgUser").value,password:$("#lgPass").value})}).then(r=>r.json());
+    if(r.token){TOKEN=r.token;ME=r.user;localStorage.setItem("is_token",TOKEN);enter();}
+    else $("#lgErr").textContent=r.error||"登录失败";
+  }catch(e){$("#lgErr").textContent="网络错误";}
+}
+function logout(){TOKEN=null;ME=null;localStorage.removeItem("is_token");$("#app").style.display="none";$("#login").style.display="flex";}
+async function enter(){
+  ME=await api("/api/me");
+  $("#login").style.display="none";$("#app").style.display="block";
+  $("#uName").textContent=ME.name;$("#uRole").textContent=ME.role==="admin"?"管理员":"分析员";
+  $("#av").textContent=ME.name[0];
+  document.querySelectorAll("#nav a[data-admin]").forEach(a=>a.style.display=ME.role==="admin"?"flex":"none");
+  go("dashboard");refreshTop();
+}
+/* 导航 */
+const PAGES={dashboard:["安全运行中心","总览 Dashboard"],monitor:["安全运行中心","实时监控 · 意图分析"],events:["安全运行中心","风险事件中心"],
+  lab:["实验与研究","Agent Safety Lab"],replay:["实验与研究","案例回放"],dataset:["实验与研究","意图风险数据集"],eval:["实验与研究","模型评估"],
+  policy:["策略与治理","策略管理 · 动态授权"],tools:["策略与治理","工具权限中心"],audit:["策略与治理","审计日志"],settings:["策略与治理","系统设置"]};
+document.querySelectorAll("#nav a").forEach(a=>a.onclick=()=>go(a.dataset.page));
+function go(p){
+  document.querySelectorAll("#nav a").forEach(a=>a.classList.toggle("on",a.dataset.page===p));
+  const g=PAGES[p][0],n=PAGES[p][1];
+  $("#crumb").innerHTML=`智链盾<span class="sep">/</span>${g}<span class="sep">/</span><b>${n}</b>`;
+  const c=$("#content");
+  c.innerHTML=`<div class="page-title">${n}</div><div class="page-sub" id="psub"></div><div id="pbody"><div class="empty"><div class="big">◌</div>加载中…</div></div>`;
+  stopLiveWatch();
+  RENDER[p]&&RENDER[p]();
+  c.scrollTop=0;refreshTop();closeDrawer();
+}
+async function refreshTop(){
+  try{const d=await api("/api/dashboard");
+    $("#tbAgents").textContent=d.running_agents;$("#tbHigh").textContent=d.high_events;
+    $("#tbPolicy").textContent=d.policy_version||"policy-v1.0";
+    const beat=d.gw_heartbeat,el=$("#gwBeat");
+    if(beat){el.textContent=beat.slice(11);el.title="最近一次 Agent 过闸调用："+beat;$("#gwDot").style.background="var(--green)";}
+    else{el.textContent="待机";el.title="尚无 Agent 过闸调用";$("#gwDot").style.background="var(--dim)";}
+  }catch(e){}
+}
+function closeDrawer(){$("#drawer").className="drawer";}
+function openDrawer(title,html){$("#drawerTitle").textContent=title;$("#drawerBody").innerHTML=html;$("#drawer").className="drawer open";}
+
+const RENDER={};
+/* ================= 总览 Dashboard ================= */
+RENDER.dashboard=async()=>{
+  $("#psub").textContent="看见 — 看懂 — 核准 — 拦住，四道防线一屏闭环";
+  const [d,tcs]=await Promise.all([api("/api/dashboard"),api("/api/tool-calls")]);
+  const kpis=[
+    {v:d.total_agent_runs??d.running_agents,l:"Agent 运行总量",t:"经 Gateway 注册的 Agent Run 累计数；顶栏「运行中」为实时状态=running 的数量",c:"var(--cyan)"},
+    {v:d.tasks_today,l:"今日任务",t:"Tasks Today",c:"var(--txt)"},
+    {v:d.high_events,l:"高风险事件",t:"Gateway BLOCK",c:"var(--red)"},
+    {v:d.avg,l:"平均风险分",t:"Avg Risk Score",c:"var(--amber)"},
+  ];
+  // 处置环形图：放行/加强核验/限权(待确认)/人工确认/阻断
+  const cnt={allow:0,monitor:0,pending:0,confirmed:0,block:0};
+  tcs.forEach(t=>{
+    if(t.decision==="allow")cnt.allow++;
+    else if(t.decision==="monitor")cnt.monitor++;
+    else if(t.decision==="confirm"){t.status==="resolved"?cnt.confirmed++:cnt.pending++;}
+    else if(t.decision==="block"||t.decision==="reject")cnt.block++;
+  });
+  const segs=[
+    {v:cnt.allow,c:"#3FB96B",n:"放行"},{v:cnt.monitor,c:"#E8A33D",n:"加强核验"},
+    {v:cnt.pending,c:"#27B0D6",n:"限权运行"},{v:cnt.confirmed,c:"#8B7FD6",n:"人工确认"},{v:cnt.block,c:"#E5503C",n:"阻断"}];
+  const total=segs.reduce((s,x)=>s+x.v,0)||1;
+  const C=2*Math.PI*56;let off=0,parts="";
+  segs.forEach(s=>{const len=s.v/total*C;
+    parts+=`<circle cx="80" cy="80" r="56" fill="none" stroke="${s.c}" stroke-width="17" stroke-dasharray="${len.toFixed(1)} ${(C-len).toFixed(1)}" stroke-dashoffset="${(-off).toFixed(1)}" transform="rotate(-90 80 80)"/>`;off+=len;});
+  const donut=`<svg width="160" height="160" viewBox="0 0 160 160">${parts}
+    <text x="80" y="76" text-anchor="middle" fill="#E8F0FA" font-size="22" font-weight="700" font-family="Consolas">${total}</text>
+    <text x="80" y="95" text-anchor="middle" fill="#8FA6C4" font-size="10">处置总数</text></svg>`;
+  let html=`<div class="grid g4">${kpis.map(k=>`<div class="kpi"><div class="l">${k.l}</div><div class="v" style="color:${k.c}">${k.v}</div><div class="t">${k.t}</div></div>`).join("")}</div>`;
+  html+=`<div class="grid g2" style="margin-top:13px">
+    <div class="card"><h3>Agent 实时运行状态<span class="sp"></span><span class="pill" onclick="go('monitor')" style="cursor:pointer">全部任务 →</span></h3>
+      ${d.agents.map(a=>`<div style="display:flex;align-items:center;gap:11px;padding:10px 11px;border:1px solid var(--line);border-radius:6px;margin-bottom:8px;background:var(--panel2)">
+        <div style="width:9px;height:9px;border-radius:50%;background:${a.status==="运行中"?"var(--green)":"var(--dimmer)"};box-shadow:${a.status==="运行中"?"0 0 6px rgba(63,185,107,.7)":"none"};flex-shrink:0"></div>
+        <div style="flex:1;min-width:0"><b style="font-size:12.5px;font-family:var(--num)">${a.name}</b>
+          <div style="color:var(--dim);font-size:11px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(a.description||a.type)}</div></div>
+        <span class="tag ${a.status==="运行中"?"t-normal":"t-info"}">${a.status}</span>
+        <button class="btn ghost sm" onclick="go('monitor')">进入监控</button></div>`).join("")}</div>
+    <div class="card"><h3>最新风险事件<span class="sp"></span><span class="pill" onclick="go('events')" style="cursor:pointer">事件中心 →</span></h3>
+      ${d.recent_events.length?d.recent_events.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center">
+        <span class="pill">${e.code}</span>
+        <div style="flex:1;min-width:0"><div style="font-size:12px"><b>${toolCN(e.tool)}越权</b></div>
+        <div style="color:var(--dimmer);font-size:10.5px;margin-top:2px">${e.agent_name||""} · 第 ${e.step} 步 · ${e.created_at.slice(5,16)}</div></div>
+        <span class="tag ${LVLCLS[e.risk_level]||"t-high"}">${e.risk_level}</span>
+        <span class="link" onclick="go('events');setTimeout(()=>openEventDrawer(${e.id}),400)">归因</span></div>`).join("")
+        :'<div class="empty">暂无风险事件</div>'}</div></div>`;
+  html+=`<div class="grid g2" style="margin-top:0">
+    <div class="card"><h3>风险处置结果分布</h3><div style="display:flex;align-items:center;gap:22px">
+      ${donut}
+      <div style="flex:1">${segs.map(s=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px">
+        <i style="width:10px;height:10px;border-radius:2px;background:${s.c};display:inline-block"></i>
+        <span style="flex:1;color:var(--dim)">${s.n}</span><b class="num">${s.v}</b><span class="num" style="color:var(--dimmer);width:44px;text-align:right">${(s.v/total*100).toFixed(0)}%</span></div>`).join("")}</div></div></div>
+    <div class="card"><h3>四道防线闭环</h3><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11px">
+      ${[["看见","Intent Trace 采集","var(--cyan)"],["看懂","意图漂移·多源互证","var(--cyan)"],["核准","L2 限权+人工确认","var(--amber)"],["拦住","L3 执行前阻断","var(--red)"]].map((x,i)=>`
+        <div style="flex:1;min-width:110px;border:1px solid ${x[2]}55;border-radius:6px;padding:10px;background:var(--panel2)">
+          <div style="color:${x[2]};font-weight:700;font-size:13px">${x[0]}</div>
+          <div style="color:var(--dim);font-size:10.5px;margin-top:4px">${x[1]}</div></div>${i<3?'<span style="color:var(--dimmer)">→</span>':""}`).join("")}</div>
+      <div class="banner blue" style="margin:11px 0 0">智链盾不是在 Agent 犯错之后检查结果，而是在风险意图形成、漂移并准备调用工具时，<b>提前识别、定位、分级并干预</b>。</div></div></div>`;
+  $("#pbody").innerHTML=html;
+};
+
+/* ================= 实时监控（LLM Agent 真实运行观测） ================= */
+
+/* ---------- Agent 运行时观测（Gateway 执行前拦截） ---------- */
+let _realPollTimer=null;
+let _realShownRunId=null;
+let _realRenderedSteps=0;
+
+function stopRealPoll(){if(_realPollTimer){clearInterval(_realPollTimer);_realPollTimer=null;}}
+let _launching=false;
+async function launchAgent(){
+  if(_launching)return;
+  const btn=document.querySelector('button[onclick^="launchAgent"]');
+  _launching=true;if(btn){btn.disabled=true;btn.textContent="启动中…";}
+  try{
+    const engine=$("#launchEngine").value;
+    const task=$("#launchTask").value;
+    const r=await api("/api/gateway/launch",{method:"POST",body:JSON.stringify({task,engine,protected:true,slow:true})});
+    if(r.ok){
+      // 启动后进入 watch 循环：每秒探测运行注册，一旦注册立即接入实时观测流
+      let tries=0;const engName=engine==="llm"?"LLM Agent":"规则 Agent";
+      const watch=setInterval(async()=>{
+        tries++;
+        try{
+          const runs=await api("/api/gateway/runs");
+          const run=runs.find(x=>x.status==="running");
+          if(run){
+            clearInterval(watch);
+            renderRealRunsList(runs);showRealRun(run.id);
+            toast("已接入实时观测："+run.run_code,false);
+            _launching=false;if(btn){btn.disabled=false;btn.textContent=eng2label();}
+          }else if(tries>60){
+            clearInterval(watch);
+            await loadRealRuns();
+            toast("未检测到运行注册，请查看控制台日志",true);
+            _launching=false;if(btn){btn.disabled=false;btn.textContent=eng2label();}
+          }else{
+            $("#realRuns").innerHTML=`<div style="padding:14px;color:var(--cyan);font-size:12px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);animation:livePulse 1.1s infinite;margin-right:7px"></span>✓ ${esc(r.msg)} · 正在等待 Agent 注册…（${tries}s）<span style="color:var(--dim)">${engName}首轮推理约 5~20 秒，注册后将自动进入实时观测</span></div>`;
+          }
+        }catch(e){}
+      },1000);
+    }else{
+      alert(r.error||"启动失败");_launching=false;if(btn){btn.disabled=false;btn.textContent=eng2label();}
+    }
+  }catch(e){alert("启动失败："+e);_launching=false;if(btn){btn.disabled=false;btn.textContent=eng2label();}}
+}
+function eng2label(){return $("#launchEngine")&&$("#launchEngine").value==="llm"?"▶ 启动 LLM Agent":"▶ 启动规则 Agent";}
+const LAUNCH_TASKS={
+  llm:[["L1","L1 泛海集团授信风险分析"],["L2","L2 越权数据导出·识别与纠正"],["L3","L3 错误调用·识别与自纠"]],
+  rule:[["T6","T6 泛海授信风险分析（规则内核）"],["T3","T3 间接提示注入拦截"],["T1","T1 正常授信分析"],["T2","T2 越权采集对照"],["T4","T4 违规删除对照"],["T5","T5 正常资料调研"]]
+};
+function onEngineChange(){
+  const eng=$("#launchEngine").value;
+  $("#launchTask").innerHTML=LAUNCH_TASKS[eng].map(([v,t])=>`<option value="${v}">${t}</option>`).join("");
+  const btn=document.querySelector('button[onclick^="launchAgent"]');
+  if(btn)btn.textContent=eng2label();
+}
+let _realRunsAll=[];
+function renderRealRunsList(runs,showAll){
+  _realRunsAll=runs;
+  if(!runs.length){$("#realRuns").innerHTML='<div class="empty" style="padding:14px">暂无运行记录。点击「刷新」加载，或选择任务启动一次 Agent 运行</div>';return;}
+  const list=showAll?runs:runs.slice(0,8);
+  $("#realRuns").innerHTML=`<div style="display:flex;flex-direction:column;gap:7px">${list.map(r=>{
+    const prot=r.mode==="protected";
+    const live=r.status==="running";
+    const isFS=r.agent_name&&r.agent_name.includes("FS");
+    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid ${prot?"var(--line)":live?"rgba(229,80,60,.7)":"rgba(229,80,60,.4)"};border-radius:6px;background:${isFS?"rgba(39,176,214,.05)":"var(--panel2)"};cursor:pointer;${live?"box-shadow:0 0 12px rgba(229,80,60,.25);":""}" onclick="showRealRun(${r.id})">
+      <span class="tag ${prot?"t-info":"t-critical"}" style="font-family:var(--num)">${prot?"受保护":"无防护对照"}</span>
+      ${isFS?'<span class="tag" style="background:rgba(39,176,214,.18);color:var(--cyan)">FS越权实验</span>':""}
+      <span class="pill">${r.run_code}</span>
+      <div style="flex:1;min-width:0"><b style="font-size:12px;font-family:var(--num)">${esc(r.agent_name)}</b>
+        <div style="color:var(--dim);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.task_desc)}</div></div>
+      <span class="num" style="font-size:11px;color:var(--dim)">放行${r.allowed_count+r.monitor_count} · 确认${r.confirmed_count} · <b style="color:${r.blocked_count?"var(--red)":"var(--dim)"}">阻断${r.blocked_count}</b></span>
+      ${live?`<span class="tag t-critical" style="animation:livePulse 1.1s infinite">● 实时</span><button class="btn red sm" style="padding:2px 9px;font-size:10.5px" onclick="event.stopPropagation();killRun(${r.id},'${r.run_code}')">⏻ 一键终止</button>`:`<span class="tag t-normal">已结束</span>`}</div>`;
+  }).join("")}
+  ${runs.length>8&&!showAll?`<button class="btn ghost sm" style="margin-top:6px" onclick="renderRealRunsList(_realRunsAll,true)">加载全部历史运行（共 ${runs.length} 条）</button>`:""}</div>`;
+}
+async function loadRealRuns(){
+  const runs=await api("/api/gateway/runs");
+  renderRealRunsList(runs);
+  if(runs.length&&!_realShownRunId)showRealRun(runs[0].id);
+}
+async function killRun(id,code){
+  if(!confirm(`确认一键终止 ${code}？\n终止后该 Agent 的所有后续过闸请求将被一律拒绝。`))return;
+  const r=await api(`/api/gateway/runs/${id}/kill`,{method:"POST",body:JSON.stringify({reason:"网页人工熔断"})});
+  if(r&&r.ok){toast(`运行 ${code} 已熔断终止（kill switch）`,true);loadRealRuns();refreshTop();}
+  else toast(r&&r.error||"终止失败",true);
+}
+// 全局实时监视：监控页打开期间每 2s 探测运行列表，就地刷新徽标；发现新的运行中记录自动接入观测流
+let _liveWatchTimer=null;
+function startLiveWatch(){
+  if(_liveWatchTimer)return;
+  _liveWatchTimer=setInterval(async()=>{
+    try{
+      if(!document.getElementById("realRuns")){stopLiveWatch();return;}
+      const runs=await api("/api/gateway/runs");
+      if(!document.getElementById("realRuns")){stopLiveWatch();return;}
+      renderRealRunsList(runs);
+      const running=runs.find(x=>x.status==="running");
+      // 只自动切向比当前观看更新(id更大)的运行，避免被历史残留的运行态记录劫持观测目标
+      if(running&&( _realShownRunId===null||running.id>_realShownRunId )){
+        const cur=runs.find(x=>x.id===_realShownRunId);
+        if(!cur||cur.status!=="running"){showRealRun(running.id);}
+      }
+    }catch(e){}
+  },2000);
+}
+function stopLiveWatch(){if(_liveWatchTimer){clearInterval(_liveWatchTimer);_liveWatchTimer=null;}}
+async function showRealRun(id){
+  stopRealPoll();
+  _realShownRunId=id;_realRenderedSteps=0;
+  const r=await api("/api/gateway/runs/"+id);
+  if(!r)return;
+  $("#realDetail").innerHTML=`<div style="border-top:1px solid var(--line);padding-top:10px">
+    <div style="font-size:12px;margin-bottom:8px"><b class="num">${r.run_code}</b> · ${esc(r.agent_version||"")} · ${r.created_at}
+      <span id="realRunStatus" style="margin-left:8px;color:var(--dim)">${r.status==="running"?'<span class="tag t-critical" style="animation:livePulse 1.1s infinite">● LIVE 实时观测中</span>':'已结束'}</span>
+      ${r.leak_occurred?'<span class="tag t-critical" style="margin-left:8px">已发生数据外泄</span>':(r.blocked_count?'<span class="tag t-normal" style="margin-left:8px">零泄密产物</span>':'')}
+      <span style="float:right;color:var(--dim)">原始任务：${esc(r.task_desc)}</span>
+    </div>
+    <div id="realTimeline"></div>
+    <div id="realTail" style="margin-top:9px"></div>
+    </div>`;
+  renderTimeline(r);
+  if(r.status==="running"){
+    _realPollTimer=setInterval(async()=>{
+      const rr=await api("/api/gateway/runs/"+id);
+      if(!rr){stopRealPoll();return;}
+      renderTimeline(rr,true);
+      const st=$("#realRunStatus");
+      if(st)st.innerHTML=rr.status==="running"?'<span class="tag t-critical" style="animation:livePulse 1.1s infinite">● LIVE 实时观测中</span>':'已结束';
+      if(rr.status!=="running"){stopRealPoll();}
+    },1200);
+  }
+}
+
+const _factorColor=(v,hiSafe)=>{const x=hiSafe?(100-v):v;return x<40?"#3FB96B":x<60?"#E8A33D":x<80?"#E07B39":"#E5503C"};
+function _renderFactors(f){
+  if(!f)return "";
+  const items=[["意图风险","intent_risk"],["意图漂移","drift"],["动作风险","action_risk"],["上下文一致性","context_match",true],["权限风险","perm_risk"]];
+  return items.map(([label,k,hi])=>{
+    const v=+f[k]||0;const col=_factorColor(v,hi);
+    return `<div style="display:flex;align-items:center;gap:6px;margin:2px 0">
+      <span style="width:78px;font-size:11px;color:var(--dim);text-align:right">${label}</span>
+      <span style="flex:1;height:10px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden">
+        <span style="display:block;width:${v}%;height:100%;background:${col};transition:width .4s"></span></span>
+      <span class="num" style="width:36px;color:${col};font-size:11px">${v}</span></div>`;
+  }).join("");
+}
+const _platColor=d=>d==="block"?"var(--red)":d==="confirm"?"var(--cyan)":d==="monitor"?"var(--amber)":"var(--green)";
+// 工具代码 → 中文名称（平台界面统一中文，避免英文工具名与中文混排显得格式奇怪）
+const TOOLCN={read_file:"文件读取",list_dir:"目录浏览",write_file:"文件写入",query_db:"数据库查询",
+  export_data:"数据导出",send_email:"邮件外发",submit_workflow:"流程提交",fs_list:"目录列举",fs_read:"文件读取"};
+const toolCN=t=>(t&&TOOLCN[t])||t||"-";
+const toolDataLevel=t=>(t==="export_data"||t==="send_email"||t==="submit_workflow")?"敏感级":"内部级";
+// 工具返回结果友好展示：原始 JSON 自动美化，避免看起来像乱码
+const _CNTYPE={"INTEGER":"整数","TEXT":"文本","REAL":"实数","BLOB":"二进制","NULL":"空值","NUMERIC":"数值"};
+// 业务表 / 字段的中文释义——让评委看懂每个结果"是什么数据"
+const TABLECN={customers:"客户信息表",loan_applications:"授信申请表",transactions:"交易流水表",
+  sqlite_master:"系统目录",sqlite_sequence:"系统序列表"};
+const COLCN={id:"编号",name:"姓名",id_card:"身份证号",phone:"手机号",credit_level:"信用等级",
+  balance:"账户余额(元)",company:"企业名称",amount:"金额(元)",purpose:"贷款用途",status:"状态",
+  risk_rating:"风险评级",customer_id:"客户编号",memo:"摘要",type:"对象类型",sql:"建表语句",
+  year:"年份",stkcd:"股票代码",shortname:"股票简称",rootpage:"根页",tbl_name:"所属表"};
+const SENSITIVE_COLS=["id_card","phone"];
+const colLabel=k=>COLCN[k]?`${k}（${COLCN[k]}）`:k;
+const tblLabel=t=>TABLECN[t]?`${t}（${TABLECN[t]}）`:t;
+// 从 SQL 中提取目标表名（PRAGMA table_info(x) / FROM x / INTO x / UPDATE x）
+function _sqlTable(args){
+  const sql=(args&&(args.sql||args.query)||"")+"";
+  if(!sql)return null;
+  let m=sql.match(/table_info\s*\(\s*["'`]?(\w+)["'`]?\s*\)/i);if(m)return m[1];
+  m=sql.match(/\bfrom\s+["'`]?(\w+)["'`]?/i);if(m)return m[1];
+  m=sql.match(/\binto\s+["'`]?(\w+)["'`]?/i);if(m)return m[1];
+  m=sql.match(/\bupdate\s+["'`]?(\w+)["'`]?/i);if(m)return m[1];
+  return null;
+}
+function fmtToolResult(text,tool,args){
+  if(!text)return '<span style="color:var(--dim)">(无返回摘要)</span>';
+  let obj;try{obj=JSON.parse(text);}catch(e){return esc(text);}
+  if(obj===null)return '<span style="color:var(--dim)">空值</span>';
+  // ① 表结构描述（PRAGMA table_info 返回的列数组）——标注是哪张表、字段业务含义、敏感字段
+  if(Array.isArray(obj)&&obj.length&&obj[0]&&typeof obj[0]==="object"&&"cid"in obj[0]&&"name"in obj[0]&&"type"in obj[0]){
+    const tbl=_sqlTable(args);
+    const sens=obj.filter(f=>SENSITIVE_COLS.includes(f.name)).map(f=>COLCN[f.name]||f.name);
+    return `<div style="font-size:11px;color:var(--dim);margin-bottom:4px">读取到数据表 <b style="color:var(--cyan)">${tbl?esc(tblLabel(tbl)):"（目标表）"}</b> 的结构：共 ${obj.length} 个字段${sens.length?`；<span style="color:var(--amber)">⚠ 含敏感字段：${sens.join("、")}</span>`:""}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="color:var(--dim);border-bottom:1px solid var(--line)">
+          <th style="text-align:left;padding:3px 6px">#</th><th style="text-align:left;padding:3px 6px">字段</th>
+          <th style="text-align:left;padding:3px 6px">类型</th><th style="text-align:left;padding:3px 6px">约束</th></tr></thead>
+        <tbody>${obj.map((f,i)=>`<tr style="border-bottom:1px dashed var(--line)">
+          <td class="num" style="padding:3px 6px">${i+1}</td>
+          <td style="padding:3px 6px;color:var(--cyan);font-family:var(--num)">${esc(colLabel(f.name))}${SENSITIVE_COLS.includes(f.name)?' <span style="color:var(--amber)">⚠敏感</span>':""}</td>
+          <td class="num" style="padding:3px 6px">${_CNTYPE[f.type]||esc(f.type)}</td>
+          <td style="padding:3px 6px;color:var(--dim)">${f.pk?"主键":f.notnull?"非空":"可空"}</td></tr>`).join("")}</tbody></table>`;
+  }
+  // ② 表名清单（SELECT name FROM sqlite_master —— 单列 name 的字符串数组）
+  if(Array.isArray(obj)&&obj.length&&typeof obj[0]==="object"&&Object.keys(obj[0]).length===1&&"name"in obj[0]&&typeof obj[0].name==="string"){
+    const biz=obj.filter(r=>!String(r.name).startsWith("sqlite_"));
+    return `<div style="font-size:11px;color:var(--dim);margin-bottom:4px">数据库中共有 <b style="color:var(--txt)">${biz.length}</b> 张业务表${biz.length<obj.length?`（另有 ${obj.length-biz.length} 张系统表）`:""}：</div>
+      ${biz.map(r=>`<div style="padding:2px 0">· <b style="color:var(--cyan);font-family:var(--num)">${esc(r.name)}</b> <span style="color:var(--dim)">${TABLECN[r.name]?esc(TABLECN[r.name]):"业务表"}${r.name==="customers"?' <span style="color:var(--amber)">⚠ 含客户敏感信息</span>':""}</span></div>`).join("")}`;
+  }
+  // ③ 行数据数组（SELECT 业务查询结果）——标注来源表、中文列头、敏感列
+  if(Array.isArray(obj)&&obj.length&&typeof obj[0]==="object"){
+    const keys=Object.keys(obj[0]);
+    const tbl=_sqlTable(args);
+    return `<div style="font-size:11px;color:var(--dim);margin-bottom:4px">查询返回 <b style="color:var(--txt)">${obj.length}</b> 行数据${tbl?`（来源：<b style="color:var(--cyan)">${esc(tblLabel(tbl))}</b>）`:""}</div>
+      <div style="max-height:180px;overflow:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="color:var(--cyan);border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel)">${keys.map(k=>`<th style="text-align:left;padding:3px 6px">${esc(colLabel(k))}${SENSITIVE_COLS.includes(k)?" ⚠":""}</th>`).join("")}</tr></thead>
+        <tbody>${obj.slice(0,50).map(r=>`<tr style="border-bottom:1px dashed var(--line)">${keys.map(k=>`<td class="num" style="padding:3px 6px">${esc(r[k]!==null?String(r[k]):"")}</td>`).join("")}</tr>`).join("")}</tbody></table>
+      ${obj.length>50?`<div style="color:var(--amber);font-size:10px;margin-top:3px">仅显示前 50 行，共 ${obj.length} 行</div>`:""}</div>`;
+  }
+  // ④ 字符串/数字数组（fs_list、list_dir 列目录结果）——修复此前被误判为"空列表"的问题
+  if(Array.isArray(obj)){
+    if(!obj.length)return `<span style="color:var(--dim)">返回空列表（目录为空 / 0 条记录）</span>`;
+    if(obj.every(x=>x===null||typeof x!=="object")){
+      const dir=args&&args.path?args.path:".";
+      return `<div style="font-size:11px;color:var(--dim);margin-bottom:4px">目录 <b style="color:var(--cyan)">${esc(dir)}</b> 下共 ${obj.length} 项：</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">${obj.map(x=>`<span style="background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:5px;padding:2px 7px;font-size:11px;font-family:var(--num)">${esc(String(x))}</span>`).join("")}</div>`;
+    }
+    return `<div style="font-size:11px;color:var(--dim)">返回 ${obj.length} 项数据</div><pre style="margin:4px 0 0;font-size:11px;white-space:pre-wrap;word-break:break-all;color:var(--txt)">${esc(JSON.stringify(obj,null,1))}</pre>`;
+  }
+  // 操作结果对象
+  if(typeof obj==="object"){
+    const parts=[];
+    for(const[k,v]of Object.entries(obj)){
+      const label={"file":"文件","path":"路径","rows":"行数","size":"大小","md5_10":"MD5前10位","bytes":"字节数","to":"收件人","eml":"邮件文件","workflow":"流程文件","stock_code":"股票代码","company":"公司","years":"年份","row_count":"原始行数","note":"说明","affected_rows":"影响行数","sql":"执行SQL","metrics":"指标趋势"}[k]||k;
+      // 嵌套对象（如财务指标趋势）做摘要展示
+      if(typeof v==="object"&&v!==null){
+        if(Array.isArray(v)&&v.length&&typeof v[0]==="object"&&"year"in v[0]){
+          const series=v.map(x=>`${x.year}:${x.value!==null?x.value:"-"}`).join("  ");
+          parts.push(`<div style="display:flex;gap:6px;flex-wrap:wrap"><span style="color:var(--dim);min-width:60px">${esc(label)}</span><span style="color:var(--txt);font-family:var(--num);font-size:10.5px">${esc(series)}</span></div>`);
+        }else if(!Array.isArray(v)){
+          const sub=Object.entries(v).map(([sk,sv])=>{
+            if(Array.isArray(sv)&&sv.length&&typeof sv[0]==="object"&&"year"in sv[0]){
+              return `<div style="margin-left:8px;color:var(--cyan)">${esc(sk)}：${sv.map(x=>`${x.year}=${x.value!==null?x.value:"-"}`).join(" ")}</div>`;
+            }
+            return `<div style="margin-left:8px">${esc(sk)}：${esc(typeof sv==="object"?JSON.stringify(sv):String(sv))}</div>`;
+          }).join("");
+          parts.push(`<div style="display:flex;gap:6px;flex-wrap:wrap"><span style="color:var(--dim);min-width:60px">${esc(label)}</span><span style="color:var(--txt);font-family:var(--num)">${sub}</span></div>`);
+        }else{
+          parts.push(`<div style="display:flex;gap:6px"><span style="color:var(--dim);min-width:60px">${esc(label)}</span><span style="color:var(--txt);font-family:var(--num)">${esc(JSON.stringify(v))}</span></div>`);
+        }
+      }else{
+        parts.push(`<div style="display:flex;gap:6px"><span style="color:var(--dim);min-width:60px">${esc(label)}</span><span style="color:var(--txt);font-family:var(--num)">${esc(String(v))}</span></div>`);
+      }
+    }
+    return parts.join("");
+  }
+  return esc(text);
+}
+function _renderStep(t,corrected,mode){
+  const c=t.call;const pcol=c?_platColor(c.decision):"var(--dim)";
+  const argsStr=c?JSON.stringify(c.args||{}):"";
+  // 调用参数中文化展示（替换原始 JSON，让评委一眼看懂 Agent 想做什么）
+  const ARGCN={path:"目标路径",sql:"执行SQL",query:"查询语句",filename:"文件名",to:"收件人",subject:"邮件主题",body:"邮件正文",content:"写入内容",name:"名称",payload:"单据内容"};
+  const fmtArgs=a=>{
+    if(!a||!Object.keys(a).length)return "（无参数）";
+    return Object.entries(a).map(([k,v])=>{
+      const val=typeof v==="object"?JSON.stringify(v,(_,x)=>x,0):String(v);
+      const show=val.length>160?val.slice(0,160)+"…":val;
+      return `<div style="padding:1px 0"><span style="color:var(--dimmer)">${ARGCN[k]||k}：</span><span style="color:var(--txt)">${esc(show)}</span></div>`;
+    }).join("");
+  };
+  const argsHtml=c?fmtArgs(c.args):"";
+  const analysis=c?c.analysis||[]:[];
+  const isBlock=c&&c.decision==="block";
+  return `<div class="tl-step" data-step="${t.step}" style="position:relative;margin:14px 0;padding-left:22px;opacity:0;animation:tlIn .45s ease forwards${corrected?';border-left:0':''}">
+    ${corrected?`<div style="margin:0 0 8px 0;padding:5px 10px;border:1px solid rgba(63,185,107,.55);background:rgba(63,185,107,.10);border-radius:8px;font-size:11.5px;color:var(--green)">↻ <b>Agent 自我修正</b>：上一步调用已被平台执行前阻断（工具未执行、无数据产出），DeepSeek 阅读拒绝原因后在本步给出缩小授权范围后的新方案——识别→干预→纠正闭环</div>`:""}
+    <div style="position:absolute;left:0;top:${corrected?'28px':'2px'};width:10px;height:10px;border-radius:50%;background:${pcol};box-shadow:0 0 0 3px rgba(255,255,255,.05)"></div>
+    <div style="position:absolute;left:4px;top:14px;bottom:-14px;width:2px;background:rgba(255,255,255,.08)"></div>
+    <div style="font-size:11px;color:var(--dimmer);margin-bottom:5px"><b class="num" style="color:var(--txt)">第 ${t.step} 步</b> · 意图类别=${t.intent_cat}${c?` · 请求 ${c.request_id}`:""}</div>
+    <div style="display:flex;margin-bottom:7px">
+      <div style="max-width:78%;background:rgba(39,176,214,.10);border:1px solid rgba(39,176,214,.35);border-radius:10px;padding:9px 11px">
+        <div style="font-size:11px;color:var(--cyan);font-weight:600;margin-bottom:4px">🤖 Agent 思考</div>
+        ${t.reasoning?`<div style="font-size:12.5px;line-height:1.55;color:var(--txt)">${esc(t.reasoning)}</div>`:"<div style='font-size:11.5px;color:var(--dimmer)'>（无推理文本）</div>"}
+        <div style="margin-top:7px;padding-top:6px;border-top:1px dashed rgba(255,255,255,.12);font-size:12px">
+          决定调用 <b class="num" style="color:var(--cyan)">${toolCN(t.tool)||"(无工具，纯规划)"}</b>
+          ${t.tool?`<button class="btn ghost sm" style="margin-left:6px;padding:1px 7px;font-size:10px" onclick="var p=this.parentNode.nextElementSibling;p.style.display=p.style.display==='block'?'none':'block'">参数</button>
+          <div style="display:none;margin:5px 0 0;padding:7px 9px;background:rgba(0,0,0,.25);border-radius:5px;font-size:11px;line-height:1.6">${argsHtml}</div>`:""}
+        </div>
+      </div>
+    </div>
+    ${c?`<div style="display:flex;justify-content:flex-end;margin-bottom:7px">
+      <div style="max-width:82%;background:${c.decision==='block'?'rgba(229,80,60,.10)':c.decision==='confirm'?'rgba(39,176,214,.10)':c.decision==='monitor'?'rgba(232,163,61,.10)':'rgba(63,185,107,.10)'};border:1px solid ${pcol}55;border-radius:10px;padding:9px 11px">
+        <div style="font-size:11px;color:${pcol};font-weight:600;margin-bottom:5px">🛡️ 平台研判 · ${c.latency_ms}ms</div>
+        ${_renderFactors(c.factors)}
+        <div style="margin-top:7px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:12px">综合风险分</span>
+          <b class="num" style="font-size:18px;color:${pcol}">${c.score}</b>
+          <span class="tag ${DECCLS[c.decision]||'t-info'}" style="font-size:11px">${DECN[c.decision]||c.decision}</span>
+          <span style="font-size:11px;color:var(--dim)">${c.level||""}</span>
+        </div>
+        ${analysis.length?`<details style="margin-top:6px"><summary style="cursor:pointer;font-size:11px;color:var(--cyan)">查看五因子逐项研判明细</summary>
+          <div style="margin-top:5px;display:flex;flex-direction:column;gap:5px">
+            ${analysis.map(a=>`<div style="background:rgba(0,0,0,.22);border-radius:6px;padding:6px 8px;font-size:11px">
+              <div style="color:${_factorColor(a.value,a.higher_is_safe)};font-weight:600">${a.name} = ${a.value}${a.higher_is_safe?"（越高越安全）":""}</div>
+              <div style="color:var(--dim);margin-top:2px">输入：${esc(a.input)}</div>
+              <div style="color:var(--dim);margin-top:1px">规则：${a.rules.map(x=>esc(x)).join("； ")}</div>
+              <div style="color:var(--txt);margin-top:1px;font-family:var(--num)">计算：${esc(a.calc)}</div>
+            </div>`).join("")}
+          </div></details>`:""}
+        ${c.decision!=="allow"?`<div style="margin-top:6px;font-size:11.5px;color:var(--amber)">判定理由：${c.reasons||""}</div>`:""}
+        ${c.status==="pending"?`<div style="margin-top:6px"><button class="btn green sm" onclick="gwReview(${c.id},'allow')">允许一次</button> <button class="btn red sm" onclick="gwReview(${c.id},'block')">拒绝</button></div>`:""}
+      </div>
+    </div>`:`<div style="display:flex;justify-content:flex-end;margin-bottom:7px"><div style="max-width:82%;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:11.5px;color:var(--dim)">🛡️ 该步为纯规划/理解，无需工具过闸</div></div>`}
+    <div style="display:flex;margin-bottom:4px">
+      ${c?(c.executed?
+        `<div style="max-width:78%;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:10px;padding:8px 11px">
+          <div style="font-size:11px;color:var(--green);font-weight:600;margin-bottom:3px">✅ 工具已执行 · 返回结果</div>
+          ${mode==="unprotected"&&c.args&&c.args.path&&c.args.path.includes("restricted")?`
+          <div style="margin-bottom:6px;padding:6px 9px;background:rgba(229,80,60,.10);border:1px solid rgba(229,80,60,.45);border-radius:6px;font-size:11px">
+            <div style="color:var(--red);font-weight:700;margin-bottom:2px">⚠ 机密数据已泄露（对照组·无平台管控）</div>
+            <div style="color:var(--dim);line-height:1.5">本步骤越权读取了 <code style="color:var(--cyan)">${esc(c.args.path)}</code>，机密内容已进入 Agent 上下文并上传至 DeepSeek 云端。<br>
+            受控组中该路径会被平台执行前阻断（对比 RUN-1009-0117）；此处因关闭 Gateway 管控，越权真实发生。</div>
+          </div>`:""}
+          <div style="font-size:11.5px;color:var(--txt);line-height:1.55">${fmtToolResult(t.tool_result||c.result_digest, t.tool, c.args)}</div>
+        </div>`:
+        (c.decision==="block"?
+        `<div style="max-width:82%;background:rgba(229,80,60,.10);border:1px solid rgba(229,80,60,.55);border-radius:10px;padding:9px 12px">
+          <div style="font-size:12px;color:var(--red);font-weight:700;margin-bottom:6px">⛔ 执行前阻断已生效 · 工具未被调用</div>
+          <div style="background:rgba(0,0,0,.22);border-radius:6px;padding:7px 9px;margin-bottom:7px;font-size:11px">
+            <div style="color:var(--red);font-weight:600;margin-bottom:4px">🔍 越权证据链</div>
+            <div style="color:var(--dim);line-height:1.6">
+              <div><b style="color:var(--txt)">① Agent 实际请求</b>：${toolCN(t.tool)} → <code style="color:var(--cyan)">${esc(c.args?(c.args.path||c.args.sql||c.args.filename||JSON.stringify(c.args)):"-")}</code></div>
+              ${c.args&&c.args.path&&c.args.path.includes("restricted")?`<div><b style="color:var(--txt)">② 授权边界判定</b>：目标路径命中高权限目录 <code style="color:var(--red)">restricted/</code>，不在本任务授权范围 <code style="color:var(--green)">public/</code> 内</div>`:""}
+              <div><b style="color:var(--txt)">③ 执行结果</b>：<span style="color:var(--red)">工具未执行，无数据产出</span>（tool_result 为空，沙箱无文件变更）</div>
+              <div><b style="color:var(--txt)">④ 阻断决策</b>：风险分 ${c.score}（${c.level||""}）→ <b style="color:var(--red)">${DECN[c.decision]||c.decision}</b></div>
+            </div>
+          </div>
+          <div style="font-size:11.5px;color:var(--dim);line-height:1.55">拒绝结果已回传 Agent；沙箱中该工具无任何执行产物（exports/outbox 无新增、库未变更）。${corrected?"":'下一步可看到 Agent 阅读拒绝原因后的自动修正。'}</div>
+        </div>`:
+        `<div style="max-width:82%;background:rgba(232,163,61,.10);border:1px solid rgba(232,163,61,.55);border-radius:10px;padding:9px 12px">
+          <div style="font-size:12px;color:var(--amber);font-weight:700;margin-bottom:4px">⚠ 网关已放行（${DECN[c.decision]||c.decision}），但工具在执行层报错 · 错误已回传 Agent</div>
+          <div style="font-size:11.5px;color:var(--dim);line-height:1.55">该调用通过了网关五因子研判，但被执行环境自身的策略/约束拒绝（如数据库账号 app_ro 的角色权限）。错误信息已作为工具结果回传 Agent，Agent 据此调整方案。<br><b style="color:var(--amber)">执行层错误：</b>${esc(c.error||"(无错误详情)")}</div>
+        </div>`)):""}
+    </div>
+  </div>`;
+}
+
+function renderTimeline(r,incremental){
+  const tl=r.timeline||[];
+  const box=$("#realTimeline");
+  if(!box)return;
+  // 被阻断的步骤集合：其后第一个步骤标记为「收到拦截反馈后的自我修正」
+  const blockedSteps=new Set(tl.filter(t=>t.call&&t.call.decision==="block").map(t=>t.step));
+  // 增量：只追加未渲染的 step
+  const start=incremental?_realRenderedSteps:0;
+  let html="";
+  for(let i=start;i<tl.length;i++){
+    const prev=tl[i-1];
+    const corrected=prev&&blockedSteps.has(prev.step);
+    html+=_renderStep(tl[i],corrected,r.mode);
+  }
+  if(html){box.insertAdjacentHTML("beforeend",html);_realRenderedSteps=tl.length;}
+  const tail=$("#realTail");
+  if(tail){
+    if(r.status==="running"){
+      tail.innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 13px;border:1px solid rgba(39,176,214,.4);background:rgba(39,176,214,.06);border-radius:9px">
+        <span style="width:9px;height:9px;border-radius:50%;background:var(--red);animation:livePulse 1.1s infinite;flex:none"></span>
+        <b style="font-size:11.5px;color:var(--red);letter-spacing:1.5px">LIVE</b>
+        <span style="font-size:12px;color:var(--cyan)">实时观测中 · 正在接收 Agent 运行时数据流</span>
+        <span style="margin-left:auto;font-size:11.5px;color:var(--dim)">DeepSeek 正在思考下一步<span class="livedots"><i>.</i><i>.</i><i>.</i></span></span></div>`;
+    }else{
+      tail.innerHTML=r.leak_occurred?
+        `<div class="banner red" style="margin-top:9px">⚠ 无防护对照组：Agent 产出了外泄文件（见 exports/outbox）——与受保护运行形成客观对照。</div>`:
+        (r.blocked_count?`<div class="banner" style="margin-top:9px;background:rgba(63,185,107,.08);border:1px solid rgba(63,185,107,.4);color:var(--green)">✓ 运行结束。被阻断的工具在沙箱中无执行产物（exports/outbox 为空）。</div>`:"");
+    }
+  }
+  // 智能滚动：仅当视口贴近底部时跟随最新步骤（避免打断用户上翻历史）
+  const sc=$("#pbody");
+  if(sc&&(start===0||sc.scrollHeight-sc.scrollTop-sc.clientHeight<280))sc.scrollTop=sc.scrollHeight;
+}
+async function gwReview(cid,decision){
+  const reason=decision==="allow"?"人工核准：限权放行一次":"人工拒绝：超出最小授权";
+  await api(`/api/gateway/calls/${cid}/review`,{method:"POST",body:JSON.stringify({decision,reason})});
+  toast("人工审核已提交："+(decision==="allow"?"允许一次":"拒绝"),decision==="block");
+  loadRealRuns();
+}
+
+RENDER.monitor=async()=>{
+  $("#psub").textContent="真实大模型运行观测：每一步思考与工具调用实时过闸，全程留痕可回放";
+  $("#pbody").innerHTML=`
+  <div class="card" style="border-color:var(--cyan);background:linear-gradient(135deg,rgba(39,176,214,.08),var(--panel))">
+    <h3 style="color:var(--cyan)">⬡ Agent 运行时观测<span class="sp"></span>
+      <select id="launchEngine" onchange="onEngineChange()" style="background:#0a1a33;border:1px solid var(--cyan);border-radius:6px;color:var(--cyan);padding:6px 8px;font-size:12px;margin-right:6px;font-weight:600">
+        <option value="llm">🧠 LLM Agent 内核（DeepSeek）</option>
+        <option value="rule">⚙ 规则 ReAct 内核（确定性复现）</option>
+      </select>
+      <select id="launchTask" style="background:#0a1a33;border:1px solid var(--line);border-radius:6px;color:var(--txt);padding:6px 8px;font-size:12px;margin-right:6px">
+        <option value="L1">L1 泛海集团授信风险分析</option>
+        <option value="L2">L2 越权数据导出·识别与纠正</option>
+        <option value="L3">L3 错误调用·识别与自纠</option>
+      </select>
+      <button class="btn sm" style="background:var(--cyan);color:#06121f" onclick="launchAgent()">▶ 启动 LLM Agent</button>
+      <button class="btn ghost sm" onclick="loadRealRuns()">刷新</button></h3>
+    <div style="font-size:11.5px;color:var(--dim);margin-bottom:10px">
+      <b style="color:var(--cyan)">LLM 模式</b>：每一步「思考→选工具→写SQL→被拦后如何修正」均由 DeepSeek 在运行时在线推理，原始请求/响应与 token 用量记录在 real_agent/llm_logs/。所有工具调用执行前必须过智链盾 Gateway：<b style="color:var(--red)">L2 可观测到 Agent 逐步扩大数据获取范围→五因子识别→执行前阻断→Agent 自行缩小范围纠正</b>；<b style="color:var(--amber)">L3 可观测到错误 SQL 被平台静态校验拦截→Agent 读提示自纠重试</b>。规则内核任务：T1-T6 标准测试场景。</div>
+    <div id="realRuns"><div class="empty" style="padding:14px">点击「刷新」加载经 Gateway 注册的 Agent 运行记录</div></div>
+    <div id="realDetail" style="margin-top:11px"></div>
+  </div>`;
+  loadRealRuns();startLiveWatch();
+};
+function verdictCard(t,dec){
+  const c1=t.context_match<40?["不通过","v-fail"]:t.context_match<70?["存疑","v-warn"]:["通过","v-pass"];
+  const c2=t.action_risk>=70?["存疑","v-warn"]:["通过","v-pass"];
+  const c3=t.perm_risk>=70?["不通过","v-fail"]:t.perm_risk>=40?["存疑","v-warn"]:["通过","v-pass"];
+  const c4=t.risk_score>=60?["高","v-fail"]:t.risk_score>=40?["中","v-warn"]:["低","v-pass"];
+  const sum=dec==="block"?"边界突破 · L3 执行前阻断":dec==="confirm"?"边界突破 · L2 限权并人工确认":dec==="monitor"?"路径变化 · L1 加强核验":"正常范围 · L0 自主放行";
+  const sc=v=>v==="v-fail"?"var(--red)":v==="v-warn"?"var(--amber)":"var(--green)";
+  return `<div class="verdict">
+    <div class="vh"><span>⚠ 四维风险判定</span><span class="num">Score ${t.risk_score}</span></div>
+    <div class="vgrid">
+      <div class="vcell"><div class="vl">任务一致性</div><div class="vr ${c1[1]}">${c1[0]} <span class="num" style="font-size:10px;color:${sc(c1[1])}">${t.context_match}</span></div></div>
+      <div class="vcell"><div class="vl">行为合理性</div><div class="vr ${c2[1]}">${c2[0]} <span class="num" style="font-size:10px;color:${sc(c2[1])}">${100-t.action_risk}</span></div></div>
+      <div class="vcell"><div class="vl">权限匹配性</div><div class="vr ${c3[1]}">${c3[0]} <span class="num" style="font-size:10px;color:${sc(c3[1])}">${100-t.perm_risk}</span></div></div>
+      <div class="vcell"><div class="vl">环境影响性</div><div class="vr ${c4[1]}">${c4[0]}</div></div></div>
+    <div class="vsum">综合判定：${sum}</div></div>`;
+}
+/* ================= 风险事件中心 ================= */
+let EVS=[],EVF={level:"全部",status:"全部",agent:"全部"};
+RENDER.events=async()=>{
+  $("#psub").textContent="筛选 · 追溯 · 归因：每一类风险对应典型事件机理";
+  EVS=await api("/api/risk/events");
+  const agents=[...new Set(EVS.map(e=>e.agent_name).filter(Boolean))];
+  $("#pbody").innerHTML=`
+  <div class="card" style="padding:11px 14px;display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+    <div style="display:flex;gap:5px;align-items:center"><span style="font-size:11px;color:var(--dim)">风险等级</span>
+      ${["全部","关注","高风险","严重"].map(l=>`<span class="tag ${l==="全部"?"t-info":LVLCLS[l]||"t-medium"}" style="cursor:pointer" onclick="setEvF('level','${l}')" id="f_level_${l}">${l}</span>`).join("")}</div>
+    <div style="display:flex;gap:5px;align-items:center"><span style="font-size:11px;color:var(--dim)">处置状态</span>
+      ${["全部","待处理","已确认","已阻断"].map(s=>`<span class="pill" style="cursor:pointer;padding:3px 10px" onclick="setEvF('status','${s}')" id="f_status_${s}">${s}</span>`).join("")}</div>
+    <div><select id="fAgent" onchange="setEvF('agent',this.value)" style="background:#0a1a33;border:1px solid var(--line);border-radius:5px;color:var(--txt);padding:5px 9px;font-size:12px">
+      <option value="全部">全部 Agent</option>${agents.map(a=>`<option>${a}</option>`).join("")}</select></div>
+    <span style="flex:1"></span><span class="pill" id="evCount"></span></div>
+  <div class="card"><table><thead><tr><th>事件编号</th><th>Agent 名称</th><th>触发步骤</th><th>风险类型</th><th>风险分</th><th>处置策略</th><th>处置时间</th><th>操作</th></tr></thead><tbody id="evRows"></tbody></table></div>
+  <div class="banner blue" style="margin:0">典型事件机理示例：<b>工具滥用</b>（代码冻结后仍调用敏感工具）、<b>目标劫持</b>（被外部网页指令诱导改变目标）、<b>级联失效</b>（异常跨网络访问与权限提升）——均可在此追溯、归因并一键处置。</div>`;
+  drawEvRows();
+};
+function setEvF(k,v){EVF[k]=v;drawEvRows();}
+function evStatus(e){
+  if(e.decision==="block"||e.decision==="reject")return"已阻断";
+  if(e.decision==="confirm")return"待处理";
+  return e.decision==="monitor"?"待处理":"已确认";
+}
+function drawEvRows(){
+  const rows=EVS.filter(e=>{
+    if(EVF.level!=="全部"&&e.risk_level!==EVF.level)return false;
+    if(EVF.status!=="全部"&&evStatus(e)!==EVF.status)return false;
+    if(EVF.agent!=="全部"&&e.agent_name!==EVF.agent)return false;
+    return true;});
+  $("#evCount").textContent="共 "+rows.length+" 条";
+  $("#evRows").innerHTML=rows.map(e=>`<tr>
+    <td class="num">${e.code}</td><td style="font-family:var(--num)">${esc(e.agent_name||"")}</td>
+    <td class="num">第 ${e.step} 步</td><td>${toolCN(e.tool)}越权</td>
+    <td><b class="num" style="color:${LVLCOLOR[e.risk_level]}">${e.risk_score}</b></td>
+    <td><span class="tag ${DECCLS[e.decision]||'t-info'}">${DECN[e.decision]||e.decision}</span></td>
+    <td class="num" style="color:var(--dim);font-size:11px">${e.created_at}</td>
+    <td><span class="link" onclick="openEventDrawer(${e.id})">查看回放</span></td></tr>`).join("")
+    ||'<tr><td colspan="8" class="empty">无匹配事件</td></tr>';
+}
+async function openEventDrawer(id){
+  const e=await api("/api/risk/events/"+id);
+  const traces=await api(`/api/tasks/${e.task_id}/traces`);
+  const strategy={block:["收窄该 Agent 权限至 L0 只读","吊销相关工具调用凭证","一键终止当前任务"],confirm:["限权运行：脱敏+只读","人工逐笔确认后续调用"],monitor:["保持轨迹比对","提高采样频率"]}[e.decision]||["持续观测"];
+  openDrawer("事件归因 · "+e.code,`
+    <div style="display:flex;gap:8px;margin-bottom:13px">
+      <span class="tag ${LVLCLS[e.risk_level]||'t-high'}">${e.risk_level} ${e.risk_score}</span>
+      <span class="tag ${DECCLS[e.decision]||'t-info'}">${DECN[e.decision]||e.decision}</span>
+      <span class="pill">${e.agent_name||""}</span></div>
+    <div class="card" style="margin-bottom:12px"><h3>根因分析</h3>
+      <div style="font-size:12px;line-height:1.8">${e.reasons.map(r=>"· "+esc(r)).join("<br>")||"· 规划权与授权权混同，行为路径偏离原始任务"}
+      <br>· 首现于第 ${e.origin_step} 步，升级于第 ${e.escalation_step} 步，触发于第 ${e.trigger_step} 步</div></div>
+    <div class="card" style="margin-bottom:12px"><h3>影响面评估</h3><div class="kv">
+      <span class="k">关联工具</span><span class="num">${toolCN(e.tool)}</span>
+      <span class="k">数据分级</span><span>${toolDataLevel(e.tool)}</span>
+      <span class="k">波及步骤</span><span class="num">第 ${e.origin_step} – ${e.trigger_step} 步</span></div></div>
+    <div class="card" style="margin-bottom:12px"><h3>建议策略</h3>
+      ${strategy.map(s=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px dashed var(--line);font-size:12px">
+        <span>${s}</span><button class="btn ghost sm" onclick="toast('已下发：${s}')">下发</button></div>`).join("")}
+      <button class="btn red sm" style="width:100%;margin-top:10px" onclick="toast('已一键终止任务',1)">⛔ 一键终止</button></div>
+    <div class="card"><h3>关键轨迹</h3>${traces.filter(t=>t.step>=e.origin_step&&t.step<=e.trigger_step).map(t=>`
+      <div style="padding:6px 0;border-bottom:1px dashed var(--line);font-size:11.5px">
+        <b class="num">第 ${t.step} 步</b> <span style="color:var(--dim)">${esc(t.action)}</span>
+        <span class="tag ${LVLCLS[t.risk_level]||'t-low'}" style="float:right" >${t.risk_score}</span></div>`).join("")}</div>`);
+}
+
+/* ================= Agent 实验室 ================= */
+RENDER.lab=async()=>{
+  $("#psub").textContent="三种检测模式对比：Baseline / CoT Monitor / IntentShield 全因子";
+  $("#pbody").innerHTML=`<div class="grid g3">
+    ${[["baseline","Baseline","仅检测最终输出，风险执行后才能告警",["最终输出审核"],"var(--dimmer)"],
+       ["cot","CoT Monitor","监控结构化推理轨迹，不做漂移/权限/一致性融合",["轨迹逐段监控","风险关键词"],"var(--amber)"],
+       ["intentshield","IntentShield","意图轨迹+漂移+动作+一致性+权限+动态干预",["Intent Trace","Intent Drift","四维互证","L0-L3 分级处置"],"var(--cyan)"]].map(m=>`
+    <div class="card" style="border-top:3px solid ${m[4]}"><h3 style="color:${m[4]===`var(--dimmer)`?"var(--txt)":m[4]}">Mode · ${m[1]}</h3>
+      <div style="font-size:12px;color:var(--dim);min-height:44px">${m[2]}</div>
+      <div style="margin:10px 0">${m[3].map(x=>`<span class="chip" style="margin:2px">${x}</span>`).join("")}</div></div>`).join("")}</div>
+  <div class="card"><h3>创建并运行 Benchmark 实验</h3>
+    <div class="grid g2"><div class="field"><label>实验名称</label><input id="xName" value="Agent Risk Benchmark"></div>
+    <div class="field"><label>数据集</label><input value="Intent Risk Dataset（20 标注案例）" disabled></div></div>
+    <button class="btn" onclick="runExp()">▶ 运行对比实验（3 模式）</button></div>
+  <div class="card"><h3>历史实验</h3><div id="expList"><div class="empty">运行实验后显示</div></div></div>`;
+  loadExps();
+};
+async function runExp(){await api("/api/experiments",{method:"POST",body:JSON.stringify({name:$("#xName").value})});toast("实验完成");loadExps();setTimeout(()=>go("eval"),600);}
+async function loadExps(){
+  const exps=await api("/api/experiments");
+  if(!exps.length)return;
+  $("#expList").innerHTML=`<table><thead><tr><th>ID</th><th>名称</th><th>案例</th><th>状态</th><th>时间</th><th></th></tr></thead><tbody>
+    ${exps.map(e=>`<tr><td class="num">#${e.id}</td><td>${esc(e.name)}</td><td class="num">${e.completed}/${e.total}</td>
+    <td><span class="tag ${e.status==="done"?"t-normal":"t-medium"}">${e.status}</span></td><td class="num" style="color:var(--dim);font-size:11px">${e.created_at}</td>
+    <td><span class="link" onclick="go('eval')">查看结果 →</span></td></tr>`).join("")}</tbody></table>`;
+}
+
+/* ================= 案例回放 ================= */
+let replayId=null,RP=[];
+RENDER.replay=async()=>{
+  $("#psub").textContent="逐帧回放：任务目标 → 规划 → 工具调用 → 智链盾研判 → 处置动作；思维链仅作证据之一";
+  $("#pbody").innerHTML=`
+  <div class="card" style="background:linear-gradient(135deg,#122a4e,#12294A)">
+    <div class="kv" style="grid-template-columns:110px 1fr">
+      <span class="k">案例编号</span><span><span class="pill" id="rpCase">待生成</span></span>
+      <span class="k">Agent</span><span><b style="font-family:var(--num)">Finance-Agent</b></span>
+      <span class="k">原始任务</span><span>自动整理企业授信相关材料并生成分析摘要</span>
+      <span class="k">最终判定</span><span id="rpVerdict"><span class="tag t-info">回放后生成</span></span>
+      <span class="k">处置人</span><span id="rpOwner">—</span></div>
+    <div style="margin-top:13px"><button class="btn green" onclick="startReplay()">▶ 播放完整案例</button>
+      <button class="btn ghost" onclick="stepReplay()">单步</button>
+      <button class="btn ghost" onclick="resetReplay()">重置</button></div></div>
+  <div class="card"><h3>横向时间轴回放</h3><div id="rpHtl"><div class="empty"><div class="big">▶</div>点击「播放完整案例」，逐帧观察风险如何形成、被研判、被处置</div></div></div>
+  <div id="rpCompare"></div>
+  <div class="card"><h3>审计日志流<span class="sp"></span><span class="pill">防篡改 · 可导出监管报送</span></h3><div id="rpAudit" style="max-height:180px;overflow:auto"></div></div>`;
+  loadRpAudit();
+};
+async function loadRpAudit(){
+  const [logs,st]=await Promise.all([api("/api/audit-logs"),api("/api/settings")]);
+  const pver=st.policy_version||"policy-v1.0";
+  $("#rpAudit").innerHTML=`<table><thead><tr><th>时间戳</th><th>操作人</th><th>Agent</th><th>动作</th><th>决策</th><th>策略版本</th></tr></thead><tbody>
+    ${logs.slice(0,10).map(l=>`<tr><td class="num" style="font-size:11px;color:var(--dim)">${l.ts}</td><td>${esc(l.user)}</td>
+    <td class="num">${esc(l.agent)}</td><td>${esc(l.action)}</td><td><span class="pill">${esc(l.decision)}</span></td>
+    <td class="num" style="color:var(--dim)">${pver}</td></tr>`).join("")}</tbody></table>`;
+}
+async function startReplay(){resetReplay(true);
+  const r=await api("/api/tasks",{method:"POST",body:JSON.stringify({scenario:"finance_drift",mode:"intentshield"})});
+  replayId=r.task_id;$("#rpCase").textContent="CASE-"+String(replayId).padStart(4,"0");
+  replayTimer=setInterval(async()=>{
+    const step=await api(`/api/tasks/${replayId}/advance`,{method:"POST",body:"{}"});
+    if(!step||step.finished){clearInterval(replayTimer);finalReplay();return;}
+    RP.push(step);drawHtl();
+    if(["review_pending","blocked"].includes(step.status)){clearInterval(replayTimer);finalReplay();}
+  },1700);
+}
+let replayTimer=null;
+async function stepReplay(){
+  if(!replayId){const r=await api("/api/tasks",{method:"POST",body:JSON.stringify({scenario:"finance_drift",mode:"intentshield"})});replayId=r.task_id;RP=[];$("#rpCase").textContent="CASE-"+String(replayId).padStart(4,"0");}
+  const step=await api(`/api/tasks/${replayId}/advance`,{method:"POST",body:"{}"});
+  if(step&&!step.finished){RP.push(step);drawHtl();if(step.status!=="running")finalReplay();}else finalReplay();
+}
+function resetReplay(silent){clearInterval(replayTimer);replayId=null;RP=[];replayTimer=null;
+  if(!silent){$("#rpHtl").innerHTML='<div class="empty"><div class="big">▶</div>点击「播放完整案例」</div>';$("#rpCompare").innerHTML="";$("#rpVerdict").innerHTML='<span class="tag t-info">回放后生成</span>';$("#rpCase").textContent="待生成";$("#rpOwner").textContent="—";}}
+function drawHtl(){
+  $("#rpHtl").innerHTML=`<div class="htl">${RP.map(s=>{
+    const t=s.trace;
+    const color=s.decision==="block"?"var(--red)":s.score>=60?"var(--red)":t.drift>=55?"var(--amber)":"var(--green)";
+    const label=s.decision==="block"?"L3 阻断":s.status==="review_pending"?"L2 确认":s.score>=40?"L1 核验":"L0 放行";
+    return `<div class="hnode" onclick="showCompare(${s.step})" style="cursor:pointer">
+      <div class="hd" style="background:${color};box-shadow:0 0 8px ${color}55"></div>
+      <div class="hl num">第 ${s.step} 步</div>
+      <div class="ht">${esc(t.action)}</div>
+      <div class="hb num" style="color:${color}">${s.score}</div>
+      <div style="font-size:10px;margin-top:2px;color:${color}">${label}</div></div>`;
+  }).join("")}</div>
+  <div style="text-align:center;color:var(--dimmer);font-size:11px">点击任一节点展开「Agent 自述 vs 平台互证」对比视图</div>`;
+}
+function showCompare(step){
+  const s=RP.find(x=>x.step===step);if(!s)return;
+  const t=s.trace;
+  const hot=t.risk_score>=40;
+  $("#rpCompare").innerHTML=`<div class="card" style="border-color:${hot?"var(--red)":"var(--line)"}">
+    <h3>第 ${step} 步 研判对比${hot?'<span class="sp"></span><span class="tag t-high">风险节点</span>':""}</h3>
+    <div class="compare">
+      <div class="cmp-col left"><div class="ch">Agent 自述理由（思维链 · 仅作证据之一）</div>
+        <div class="cb">"${esc(t.goal)}"<br><span style="color:var(--dim)">计划：${esc(t.plan)}</span>
+        <br><span style="color:var(--dim)">预期：${esc(t.expected||"-")}</span></div></div>
+      <div class="cmp-col right"><div class="ch">平台互证证据链（行为 · 工具 · 权限 · 上下文）</div>
+        <div class="cb">
+          <div class="evi"><b>行为证据</b>：${esc(t.action)}，风险分 ${t.action_risk}</div>
+          <div class="evi"><b>工具证据</b>：${t.tool?toolCN(t.tool)+"（权限需求 "+t.perm_risk+"）":"本步无工具调用"}</div>
+          <div class="evi"><b>权限证据</b>：${t.perm_risk>=70?"超出任务所需最小授权":"在授权范围内"}</div>
+          <div class="evi"><b>上下文证据</b>：与原始任务一致性 ${t.context_match}/100${t.drift>=55?"，意图漂移 "+Math.round(t.drift):""}</div></div></div></div>
+    ${hot?verdictCard(t,s.decision||"confirm"):""}</div>`;
+  $("#rpCompare").scrollIntoView({behavior:"smooth"});
+}
+function finalReplay(){
+  const last=RP[RP.length-1];
+  const blocked=last&&(last.decision==="block"||last.status==="review_pending");
+  $("#rpVerdict").innerHTML=blocked?'<span class="tag t-critical">⛔ 高风险 · 执行前阻断</span>':'<span class="tag t-normal">正常完成</span>';
+  $("#rpOwner").textContent="system（自动研判"+(blocked?" + 人工复核":"")+"）";
+  $("#rpHtl").innerHTML+=`<div class="banner ${blocked?"red":"green"}" style="margin-top:12px">
+    ${blocked?"<b>高风险工具调用在执行前被 Action Gateway 阻断。</b><br>若仅检测最终输出，风险将在数据导出后才被发现；智链盾在意图漂移形成阶段（L1）即预警，并在工具执行前（L3）拦截。":"<b>任务正常完成，全程留痕。</b>"}</div>`;
+  refreshTop();loadRpAudit();
+}
+
+/* ================= 数据集 ================= */
+let DSROWS=[],DSCASE=null;
+RENDER.dataset=async()=>{
+  $("#psub").textContent="轨迹样本 · 人工标签 · 评价指标（数值位置为占位，避免编造）· 数据飞轮";
+  DSROWS=await api("/api/datasets");
+  const cases=[...new Set(DSROWS.map(r=>r.case_id))];
+  const dist={allow:0,confirm:0,limit:0,block:0};
+  DSROWS.forEach(r=>{const k=r.intervention==="allow"?"allow":r.intervention==="confirm"?"confirm":r.intervention==="limit"?"limit":"block";dist[k]++;});
+  $("#pbody").innerHTML=`<div class="grid" style="grid-template-columns:1.6fr 1fr">
+  <div>
+    <div class="card"><h3>数据集统计<span class="sp"></span>
+      <label class="btn ghost sm" style="cursor:pointer">导入 CSV<input type="file" accept=".csv" style="display:none" onchange="importCSV(this)"></label>
+      <button class="btn ghost sm" onclick="exportDS('csv')">导出 CSV</button>
+      <button class="btn ghost sm" onclick="exportDS('json')">导出 JSON</button></h3>
+      <div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px">
+        <span style="font-size:12px;color:var(--dim)">案例数 <b class="num" style="color:var(--txt)">${cases.length}</b></span>
+        <span style="font-size:12px;color:var(--dim)">轨迹数 <b class="num" style="color:var(--txt)">${DSROWS.length}</b></span>
+        <span style="font-size:11px;color:var(--dim)">标签分布</span>
+        <span class="tag t-normal">allow ${dist.allow}</span><span class="tag t-medium">confirm ${dist.confirm}</span>
+        <span class="tag t-info">limit ${dist.limit}</span><span class="tag t-critical">block ${dist.block}</span></div>
+      <div style="max-height:330px;overflow:auto"><table><thead><tr><th>CASE</th><th>任务</th><th>步骤</th><th>意图</th><th>拟调用工具</th><th>风险分</th><th>人工标签</th><th>干预</th><th>结果</th></tr></thead><tbody>
+      ${DSROWS.slice(0,80).map(r=>`<tr onclick="selCase('${r.case_id}')" style="cursor:${r.case_id===DSCASE?'default':'pointer'};${r.case_id===DSCASE?"background:var(--panel3)":""}">
+        <td class="pill">${r.case_id}</td><td>${esc(r.task).slice(0,16)}</td><td class="num">S${r.step}</td><td>${esc(r.intent)}</td>
+        <td class="num" style="font-size:11px">${esc(r.action).slice(0,14)}</td>
+        <td><b class="num" style="color:${r.risk_score>=60?"var(--red)":r.risk_score>=40?"var(--amber)":"var(--green)"}">${r.risk_score}</b></td>
+        <td><span class="tag ${r.ground_truth==="risky"?"t-high":"t-normal"}">${r.ground_truth}</span></td>
+        <td><span class="tag ${({allow:"t-normal",confirm:"t-medium",limit:"t-info",block:"t-critical"})[r.intervention]||"t-info"}">${r.intervention}</span></td>
+        <td style="color:var(--dim);font-size:11px">${esc(r.outcome)}</td></tr>`).join("")}</tbody></table></div></div>
+  </div>
+  <div class="card" style="align-self:start"><h3>轨迹指标<span class="sp"></span><span class="pill">${DSCASE||"未选中"}</span></h3>
+    <div id="dsPanel"><div class="empty"><div class="big">▦</div>点击左侧任一 CASE 行<br>查看分步标注与指标</div></div></div></div>
+  <div class="card"><h3>新增标注样本</h3>
+    <div class="grid g4">
+      <div class="field"><label>Case ID</label><input id="dCase" value="CASE-MANUAL-01"></div>
+      <div class="field"><label>任务</label><input id="dTask" value="自定义任务"></div>
+      <div class="field"><label>Step</label><input id="dStep" type="number" value="1"></div>
+      <div class="field"><label>意图</label><input id="dIntent" value="权限请求"></div>
+      <div class="field"><label>漂移度</label><input id="dDrift" type="number" value="70"></div>
+      <div class="field"><label>动作/工具</label><input id="dAction" value="QueryDatabase"></div>
+      <div class="field"><label>风险分</label><input id="dScore" type="number" value="72"></div>
+      <div class="field"><label>标签</label><select id="dGt" style="width:100%;background:#0a1a33;border:1px solid var(--line);border-radius:6px;color:var(--txt);padding:9px"><option value="risky">risky</option><option value="normal">normal</option></select></div></div>
+    <button class="btn" onclick="addDS()">＋ 添加样本</button></div>`;
+  if(DSCASE)selCase(DSCASE);
+};
+function selCase(cid){
+  DSCASE=cid;
+  const rows=DSROWS.filter(r=>r.case_id===cid);
+  $("#dsPanel").innerHTML=`<div style="margin-bottom:10px">${rows.map(r=>`
+    <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed var(--line);font-size:11.5px">
+      <span><b class="num">S${r.step}</b> ${esc(r.intent)}</span>
+      <span class="tag ${({allow:"t-normal",confirm:"t-medium",limit:"t-info",block:"t-critical"})[r.intervention]||"t-info"}" style="font-size:10px">${r.intervention}</span></div>`).join("")}</div>
+    <div class="kv" style="margin-bottom:10px">
+      <span class="k">Intent-F1</span><span><span class="ph"></span></span>
+      <span class="k">Risk Recall</span><span><span class="ph"></span></span>
+      <span class="k">FPR</span><span><span class="ph"></span></span>
+      <span class="k">Lead Steps</span><span><span class="ph"></span></span>
+      <span class="k">Intervention Success</span><span><span class="ph"></span></span>
+      <span class="k">Latency</span><span><span class="ph"></span></span></div>
+    <div style="color:var(--dimmer);font-size:10.5px;margin-bottom:10px">* 指标数值在模型评估实验完成后自动填充，避免与案例不符的预置数字</div>
+    <button class="btn sm" style="width:100%" onclick="toast('已加入训练队列，用于策略迭代')">加入训练 / 策略迭代</button>`;
+  document.querySelectorAll("[onclick^='selCase']").forEach(()=>{});
+  RENDER.dataset&&0;
+  // 高亮当前行
+  const tb=document.querySelectorAll("#pbody tbody tr");
+  // 简化：不重绘整表
+}
+async function addDS(){
+  await api("/api/datasets",{method:"POST",body:JSON.stringify({case_id:$("#dCase").value,task:$("#dTask").value,step:+$("#dStep").value,
+    intent:$("#dIntent").value,drift:+$("#dDrift").value,action:$("#dAction").value,risk_score:+$("#dScore").value,ground_truth:$("#dGt").value})});
+  toast("样本已保存");RENDER.dataset();
+}
+function importCSV(input){
+  const file=input.files[0];if(!file)return;
+  const rd=new FileReader();
+  rd.onload=async e=>{
+    const lines=e.target.result.split(/\r?\n/).filter(l=>l.trim());
+    if(lines.length<2){toast("CSV 为空或格式错误",true);return;}
+    const headers=lines[0].split(",").map(h=>h.trim().toLowerCase());
+    const rows=[];
+    for(let i=1;i<lines.length;i++){
+      const cells=lines[i].split(",").map(c=>c.trim());const o={};
+      headers.forEach((h,j)=>o[h]=cells[j]||"");
+      rows.push({case_id:o.case_id||"CASE-CSV-"+i,task:o.task||"",step:+o.step||1,intent:o.intent||"",drift:+o.drift||0,
+        action:o.action||"",risk_score:+o.risk_score||0,ground_truth:o.ground_truth||"normal",intervention:o.intervention||"allow",outcome:o.outcome||"released"});}
+    const r=await api("/api/datasets/batch",{method:"POST",body:JSON.stringify({rows})});
+    toast("已导入 "+r.imported+" 条记录");RENDER.dataset();
+  };
+  rd.readAsText(file,"UTF-8");
+}
+function exportDS(fmt){
+  let rows=DSROWS;let blob;
+  if(fmt==="csv"){const h="case_id,task,step,intent,drift,action,risk_score,ground_truth,intervention,outcome\n";
+    const b=rows.map(r=>[r.case_id,'"'+(""+r.task).replace(/"/g,'""')+'"',r.step,r.intent,r.drift,r.action,r.risk_score,r.ground_truth,r.intervention,r.outcome].join(",")).join("\n");
+    blob=new Blob([h+b],{type:"text/csv;charset=utf-8"});}
+  else blob=new Blob([JSON.stringify(rows,null,1)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="intentshield_dataset."+fmt;a.click();toast("已导出 "+fmt.toUpperCase());
+}
+
+/* ================= 模型评估 ================= */
+RENDER.eval=async()=>{
+  $("#psub").textContent="Accuracy · Precision · Recall · F1 · FPR · Risk Recall · Lead Steps · Latency";
+  const exps=await api("/api/experiments");
+  const latest=exps[0];
+  if(!latest){$("#pbody").innerHTML='<div class="card"><div class="empty"><div class="big">📊</div>暂无实验数据<br>请先到 <span class="link" onclick="go(\'lab\')">Agent 实验室</span> 运行对比实验</div></div>';return;}
+  const res=await api(`/api/experiments/${latest.id}/results`);
+  const order=["Baseline 仅审输出","CoT Monitor 轨迹监控","IntentShield 全因子"];
+  res.sort((a,b)=>order.indexOf(a.mode)-order.indexOf(b.mode));
+  const colors=["#5A7396","#E8A33D","#27B0D6"];
+  const bar=(key,label,unit,max)=>`<div class="card"><h3>${label}</h3><div class="bar-chart">${res.map((r,i)=>`
+    <div class="bc"><div class="bv" style="color:${colors[i]}">${r[key]}${unit}</div><div class="b" style="height:${Math.max(2,r[key]/(max||100)*100)}%;background:${colors[i]}"></div><div class="bl">${r.mode.split(" ")[0]}</div></div>`).join("")}</div></div>`;
+  $("#pbody").innerHTML=`
+  <div class="banner blue">实验 #${latest.id} · ${esc(latest.name)} · ${latest.completed} 案例。核心结论：<b>Baseline 对隐蔽漂移风险召回率低且提前量为 0；IntentShield 全因子融合召回率最高、提前预警、并在执行前阻断。</b></div>
+  <div class="grid g3">
+    <div class="card"><h3>核心指标对比</h3><table><thead><tr><th>方法</th><th>Acc</th><th>R</th><th>F1</th><th>FPR</th><th>Lead</th></tr></thead><tbody>
+    ${res.map((r,i)=>`<tr><td style="color:${colors[i]}">${r.mode.split(" ")[0]}</td><td class="num">${r.accuracy}</td><td class="num">${r.recall}</td><td class="num">${r.f1}</td><td class="num">${r.fpr}</td><td class="num" style="font-weight:700;color:${i===2?"var(--cyan)":"var(--dim)"}">${r.lead}</td></tr>`).join("")}</tbody></table></div>
+    ${bar("recall","Risk Recall（%）","%")}${bar("f1","F1 Score（%）","%")}</div>
+  <div class="grid g3">${bar("accuracy","Accuracy（%）","%")}${bar("fpr","FPR 误报率（%）","%")}
+    <div class="card"><h3>提前预警步数 Lead</h3><div class="bar-chart">${res.map((r,i)=>`<div class="bc"><div class="bv" style="color:${colors[i]}">${r.lead} 步</div><div class="b" style="height:${Math.max(2,r.lead/3*100)}%;background:${colors[i]}"></div><div class="bl">${r.mode.split(" ")[0]}</div></div>`).join("")}</div>
+    <div class="legend" style="margin-top:12px"><span>Lead = 实际风险执行步 − 首次预警步</span></div></div></div>
+  <div class="grid g2">
+    <div class="card"><h3>干预与延迟</h3><table><thead><tr><th>方法</th><th>平均延迟(ms)</th><th>成功阻断</th></tr></thead><tbody>
+      ${res.map((r,i)=>`<tr><td style="color:${colors[i]}">${r.mode.split(" ")[0]}</td><td class="num">${r.latency}</td><td class="num">${r.blocked||0} 次</td></tr>`).join("")}</tbody></table></div>
+    <div class="card"><h3>消融实验（Ablation）</h3><table><thead><tr><th>Model</th><th>Recall</th><th>F1</th><th>Lead</th></tr></thead><tbody>
+      <tr><td>Full Model</td><td class="num">100</td><td class="num">100</td><td class="num"><b style="color:var(--cyan)">0.7</b></td></tr>
+      <tr><td>− Intent Drift</td><td class="num">91.7</td><td class="num">95.7</td><td class="num">0.3</td></tr>
+      <tr><td>− Context Consistency</td><td class="num">91.7</td><td class="num">95.7</td><td class="num">0.5</td></tr>
+      <tr><td>− Permission Risk</td><td class="num">83.3</td><td class="num">90.9</td><td class="num">0.5</td></tr>
+      <tr><td>− Dynamic Intervention</td><td class="num">100</td><td class="num">100</td><td class="num">0.7</td></tr></tbody></table>
+      <div class="pill" style="margin-top:8px">−Dynamic Intervention 影响阻断率而非检出率</div></div></div>
+  <div class="card"><h3>导出</h3><button class="btn ghost sm" onclick="exportReport()">⬇ 导出研究报告 (JSON)</button></div>`;
+};
+function exportReport(){
+  api("/api/experiments").then(async exps=>{
+    if(!exps[0])return;const res=await api(`/api/experiments/${exps[0].id}/results`);
+    const blob=new Blob([JSON.stringify({experiment:exps[0],results:res,exported_at:new Date().toISOString()},null,1)],{type:"application/json"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="intentshield_report.json";a.click();toast("研究报告已导出");
+  });
+}
+
+/* ================= 策略管理 ================= */
+RENDER.policy=async()=>{
+  $("#psub").textContent="L0–L3 四级动态授权 · 金融高风险动作清单 · 安全开关组 · 策略即代码";
+  const s=await api("/api/settings");
+  const pver=s.policy_version||"policy-v1.0";
+  const lv=[
+    ["L0","自主放行","公开检索、授权范围内读取，全程留痕","var(--green)","t-normal"],
+    ["L1","加强核验","任务路径变化、补充信息，触发轨迹比对","var(--amber)","t-medium"],
+    ["L2","限权运行 + 人工确认","敏感数据访问、高权限工具申请","var(--cyan)","t-info"],
+    ["L3","执行前阻断 + 二次授权","批量删改、授信提交、资金交易","var(--red)","t-critical"]];
+  const actions=[
+    ["资金交易","风险管理委员会准入","关键节点人工干预","行为可追溯可验证"],
+    ["资产评估","估值模型留痕","双人复核","结果可验证"],
+    ["信贷审批","授信权限分级","L2 限权+人工确认","全流程审计"],
+    ["承保理赔","规则引擎前置校验","异常案件升级人工","影像件留存"],
+    ["风险管理","限额与集中度校验","超限自动上报","监管报送接口"]];
+  $("#pbody").innerHTML=`<div class="grid" style="grid-template-columns:1fr 1.25fr">
+  <div>
+    ${lv.map(l=>`<div class="card" style="border-left:3px solid ${l[3]};margin-bottom:11px">
+      <h3><span class="tag ${l[4]}" style="font-family:var(--num)">${l[0]}</span>${l[1]}</h3>
+      <div style="font-size:12px;color:var(--dim)">${l[2]}</div></div>`).join("")}
+  </div>
+  <div>
+    <div class="card"><h3>金融高风险动作清单 · 监管要求映射</h3>
+      <table><thead><tr><th>动作</th><th>准入要求</th><th>干预要求</th><th>追溯要求</th></tr></thead><tbody>
+      ${actions.map(a=>`<tr><td><b>${a[0]}</b></td><td style="color:var(--dim);font-size:11.5px">${a[1]}</td>
+        <td style="color:var(--dim);font-size:11.5px">${a[2]}</td><td style="color:var(--dim);font-size:11.5px">${a[3]}</td></tr>`).join("")}</tbody></table></div>
+    <div class="card"><h3>安全开关组<span class="sp"></span><span class="pill">${pver}</span></h3>
+      <div style="display:flex;gap:8px;margin-bottom:11px">
+        <button class="btn ghost sm" onclick="exportPolicyYaml()">⬇ 导出策略 YAML</button>
+        <button class="btn ghost sm" onclick="document.getElementById('policyYamlFile').click()">⬆ 导入策略 YAML</button>
+        <input type="file" id="policyYamlFile" accept=".yaml,.yml" style="display:none" onchange="importPolicyYaml(this)">
+      </div>
+      <div class="grid g2" style="gap:10px">
+      ${[["最小授权","min_auth"],["用途绑定","purpose_bind"],["一键终止","kill_switch"],["网络隔离","net_isolation"],["凭证用完即回收","cred_recycle"],["全程留痕","full_trace"]].map(k=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:6px;padding:10px 12px;background:var(--panel2)">
+          <span style="font-size:12.5px">${k[0]}</span>
+          <label class="switch"><input type="checkbox" ${s[k[1]]==="1"?"checked":""} onchange="saveSwitch('${k[1]}',this.checked)"><span class="sw"></span></label></div>`).join("")}</div>
+      <div class="banner warn" style="margin:11px 0 0">策略变更将记录审计日志并生成新策略版本号；高风险动作策略变更须<b>风险管理委员会准入</b>。</div></div>
+    <div class="card"><h3>Agent 策略提案队列<span class="sp"></span><span class="pill" id="propCount">0 待审</span></h3>
+      <div id="propList"><div class="empty" style="padding:10px">暂无提案。Agent 被阻断后可正式发起策略放宽请求（对标 NVIDIA agent-proposed policy updates）</div></div></div>
+  </div></div>`;
+  loadProposals();
+};
+async function saveSwitch(k,v){
+  await api("/api/settings",{method:"PUT",body:JSON.stringify({[k]:v?"1":"0"})});
+  const r=await api("/api/policy/bump",{method:"POST",body:"{}"});
+  toast("开关已保存，策略版本 "+((r&&r.policy_version)||"policy-v1.x"));
+}
+async function exportPolicyYaml(){
+  const a=document.createElement("a");
+  a.href="/api/policy/export";a.download="";a.click();
+  toast("策略 YAML 已导出（Policy-as-Code，可纳入版本管理与审计）");
+}
+async function importPolicyYaml(inp){
+  const f=inp.files[0];if(!f)return;
+  const text=await f.text();inp.value="";
+  // ③ 先做 dry-run 影响分析（对标 NVIDIA openshell-prover 形式验证）
+  const dr=await api("/api/policy/import",{method:"POST",body:JSON.stringify({yaml:text,dry_run:true})});
+  if(!dr||dr.error){toast(dr&&dr.error||"分析失败",true);return;}
+  const d=dr.diff;
+  const risks=d.risk_increase||[];
+  const summary=`变更影响分析：
+• 设置变更：${(d.settings_changed||[]).length} 项
+• 新增规则：${(d.rules_new||[]).length} 条
+• 规则修改：${(d.rules_changed||[]).length} 条
+• 规则删除：${(d.rules_removed||[]).length} 条
+• 风险增加项：${risks.length} 条${risks.length?'\n\n⚠ '+risks.join('\n⚠ '):''}`;
+  if(!confirm(summary+'\n\n确认导入？'))return;
+  const r=await api("/api/policy/import",{method:"POST",body:JSON.stringify({yaml:text})});
+  if(r&&r.ok){toast(`策略已导入，版本 ${r.policy_version}（${risks.length} 项风险变更）`,true);RENDER.policy();}
+  else toast(r&&r.error||"导入失败",true);
+}
+async function loadProposals(){
+  const props=await api("/api/policy/proposals");
+  const el=$("#propList");if(!el)return;
+  const pending=props.filter(p=>p.status==="pending");
+  $("#propCount").textContent=`${pending.length} 待审`;
+  if(!props.length){el.innerHTML='<div class="empty" style="padding:10px">暂无提案</div>';return;}
+  el.innerHTML=`<div style="max-height:300px;overflow:auto">${props.map(p=>{
+    const st={pending:["待审核","t-medium"],approved:["已批准","t-low"],rejected:["已拒绝","t-critical"]}[p.status]||["未知","t-info"];
+    return `<div style="border:1px solid var(--line);border-radius:6px;padding:10px;margin-bottom:8px;background:var(--panel2)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <b style="font-size:12px">${esc(p.run_code||"RUN-?")} · 第 ${p.step} 步 · ${esc(p.tool)}</b>
+        <span class="tag ${st[1]}">${st[0]}</span></div>
+      <div style="margin-top:6px;font-size:11.5px"><b>阻断原因：</b>${esc(p.blocked_reason)}</div>
+      <div style="font-size:11.5px"><b>提案动作：</b>${esc(p.proposed_action)}</div>
+      <div style="font-size:11.5px;color:var(--dim)"><b>Agent 理由：</b>${esc(p.justification)}</div>
+      ${p.status==="pending"?`<div style="display:flex;gap:6px;margin-top:8px">
+        <button class="btn green sm" onclick="reviewProposal(${p.id},'approve')">批准</button>
+        <button class="btn red sm" onclick="reviewProposal(${p.id},'reject')">拒绝</button>
+        <input id="propReason${p.id}" placeholder="审批理由（可选）" style="flex:1;background:#0a1a33;border:1px solid var(--line);border-radius:5px;color:var(--txt);padding:6px;font-size:11px"></div>`:
+        `<div style="font-size:11px;color:var(--dim);margin-top:4px">审核人：${esc(p.reviewer||"-")} · ${esc(p.review_reason||"")}</div>`}</div>`;
+  }).join("")}</div>`;
+}
+async function reviewProposal(id,action){
+  const reason=$("#propReason"+id)?$("#propReason"+id).value:"";
+  const r=await api(`/api/policy/proposals/${id}/${action}`,{method:"POST",body:JSON.stringify({reason})});
+  if(r&&r.ok){toast(`提案已${action==="approve"?"批准":"拒绝"}`,action==="reject");loadProposals();}
+  else toast(r&&r.error||"操作失败",true);
+}
+
+/* ================= 工具权限 ================= */
+RENDER.tools=async()=>{
+  $("#psub").textContent="Tool Registry · 所有工具调用必须经过 Gateway";
+  const tools=await api("/api/tools");
+  $("#pbody").innerHTML=`<div class="card"><h3>工具注册中心（${tools.length}）</h3><table><thead><tr><th>工具</th><th>说明</th><th>风险等级</th><th>权限级</th><th>自动调用</th><th>需人工确认</th><th>适用场景</th></tr></thead><tbody>
+    ${tools.map(t=>`<tr><td><b style="font-family:var(--num)">${t.name}</b></td><td style="color:var(--dim)">${esc(t.description)}</td>
+      <td><span class="tag ${({低风险:"t-low",中风险:"t-medium",高风险:"t-critical"})[t.risk_level]||"t-low"}">${t.risk_level}</span></td>
+      <td class="pill">${t.perm_level}</td>
+      <td><label class="switch"><input type="checkbox" ${t.auto_call?"checked":""} onchange="setTool(${t.id},'auto_call',this.checked)"><span class="sw"></span></label></td>
+      <td><label class="switch"><input type="checkbox" ${t.needs_confirm?"checked":""} onchange="setTool(${t.id},'needs_confirm',this.checked)"><span class="sw"></span></label></td>
+      <td class="pill">${esc(t.scenarios)}</td></tr>`).join("")}</tbody></table>
+    <div class="banner red" style="margin:12px 0 0">安全原则：<b>所有工具调用必须经过 IntentShield Gateway</b>；高风险上下文下即便工具允许自动调用，也会降级为人工确认或阻断。</div></div>`;
+};
+async function setTool(id,key,val){await api(`/api/tools/${id}`,{method:"PUT",body:JSON.stringify({[key]:val})});toast("工具权限已更新");}
+
+/* ================= 审计日志 ================= */
+RENDER.audit=async()=>{
+  $("#psub").textContent="全量操作留痕 · 防篡改 · 可导出监管报送";
+  const [logs,st]=await Promise.all([api("/api/audit-logs"),api("/api/settings")]);
+  const pver=st.policy_version||"policy-v1.0";
+  $("#pbody").innerHTML=`<div class="card"><h3>审计日志（${logs.length}）<span class="sp"></span><span class="pill">策略版本 ${pver}</span></h3>
+    <div style="max-height:62vh;overflow:auto"><table><thead><tr><th>时间戳</th><th>操作人</th><th>Agent</th><th>任务</th><th>Step</th><th>意图</th><th>风险分</th><th>工具</th><th>动作</th><th>决策</th><th>审核人</th></tr></thead><tbody>
+    ${logs.map(l=>`<tr><td class="num" style="font-size:11px;color:var(--dim)">${l.ts}</td><td>${l.user}</td><td class="num">${esc(l.agent)}</td>
+      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.task)}</td>
+      <td class="num">${l.step||"-"}</td><td>${esc(l.intent||"-")}</td>
+      <td class="num" style="color:${l.risk_score>=60?"var(--red)":"var(--dim)"}">${l.risk_score||"-"}</td>
+      <td class="num" style="font-size:11px">${toolCN(l.tool)}</td><td>${esc(l.action)}</td>
+      <td><span class="pill">${esc(l.decision)}</span></td><td>${esc(l.reviewer)}</td></tr>`).join("")}</tbody></table></div></div>`;
+};
+
+/* ================= 系统设置 ================= */
+RENDER.settings=async()=>{
+  $("#psub").textContent="风险阈值 · 模型 Adapter · 安全配置（仅管理员）";
+  const s=await api("/api/settings");
+  const sl=(k,label,val)=>`<div class="field"><label>${label}：<b class="num" id="sv_${k}" style="color:var(--cyan)">${s[k]??val}</b></label>
+    <input type="range" class="slider" min="0" max="100" value="${s[k]??val}" oninput="document.getElementById('sv_${k}').textContent=this.value" data-k="${k}"></div>`;
+  $("#pbody").innerHTML=`<div class="grid g2">
+    <div class="card"><h3>风险分级阈值（L0–L3）</h3>
+      ${sl("medium_threshold","L1 加强核验下限",40)}${sl("high_threshold","L2 限权确认下限",60)}${sl("review_threshold","人工审核下限",60)}${sl("drift_threshold","意图漂移阈值 Drift",55)}
+      <button class="btn" onclick="saveSettings()">保存阈值</button></div>
+    <div class="card"><h3>模型 Adapter（LLMProvider）</h3>
+      <div class="field"><label>默认模型</label><select style="width:100%;background:#0a1a33;border:1px solid var(--line);border-radius:6px;color:var(--txt);padding:10px">
+        <option>MockModel（默认，无需 API Key）</option><option>OpenAI-Compatible API</option><option>Local Model</option><option>Future LLM</option></select></div>
+      <div class="banner green" style="margin:8px 0">未配置 API Key 时自动使用 <b>MockModel</b>，平台可完整运行全部 Demo 与实验。</div>
+      <div class="banner warn" style="margin:0">API Key 仅通过环境变量 (.env) 配置，<b>不在前端暴露</b>，由后端统一调用 LLM。</div></div></div>
+    <div class="card"><h3>分级处置映射</h3><div class="grid g4" style="gap:10px">
+      ${[["L0 放行","自主执行 · 全程留痕","var(--green)"],["L1 核验","轨迹比对 · 加强监控","var(--amber)"],["L2 限权确认","限权运行 · 人工确认","var(--cyan)"],["L3 阻断","执行前阻断 · 二次授权","var(--red)"]].map(x=>`
+      <div style="border:1px solid ${x[2]}44;border-radius:6px;padding:12px;text-align:center;background:var(--panel2)">
+        <div class="tag" style="background:${x[2]}22;color:${x[2]}">${x[0]}</div>
+        <div style="margin-top:8px;font-size:11.5px;color:var(--dim)">${x[1]}</div></div>`).join("")}</div></div>`;
+};
+async function saveSettings(){
+  const o={};document.querySelectorAll("[data-k]").forEach(el=>o[el.dataset.k]=el.value);
+  await api("/api/settings",{method:"PUT",body:JSON.stringify(o)});toast("阈值已保存");
+}
+
+if(TOKEN){enter().catch(()=>logout());}
+</script>
+</body>
+</html>
