@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: intentshield
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
