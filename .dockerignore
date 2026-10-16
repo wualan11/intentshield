@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+data/
+workspace/
+*.md
+!README.md
+tests/
+.git/
