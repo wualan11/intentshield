@@ -901,12 +901,15 @@ class H(BaseHTTPRequestHandler):
             slow = body.get("slow", True)
             engine = body.get("engine", "rule")  # rule=确定性ReAct内核 / llm=DeepSeek真实大模型
             py = sys.executable
+            port = int(os.environ.get("PORT", 8800))
             cmd = [py, os.path.join(os.path.dirname(os.path.abspath(__file__)), "real_agent", "run.py"),
-                   task]
+                   task, "--url", f"http://127.0.0.1:{port}"]
             if slow:
                 cmd.append("--slow")
             if not protected:
                 cmd.append("--unprotected")
+            if engine == "llm":
+                cmd.append("--llm")
             # 子进程输出落盘（含与 DeepSeek 交互的逐步日志），作为运行证据
             log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "real_agent", "llm_logs")
             os.makedirs(log_dir, exist_ok=True)
